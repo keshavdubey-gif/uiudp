@@ -335,7 +335,35 @@ function initModal() {
    SUBMISSION
 ════════════════════════════════════════════════════ */
 async function submitSurvey() {
-    responses.timestamp = new Date().toISOString();
+    // ── Final DOM Sweep (Fail-safe for missed events) ───────────
+    // Captures Selects and Text fields
+    const directFields = ['age_group', 'year_of_study', 'program', 'stream', 'social_friction_open', 'safety_factors'];
+    directFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) responses[id] = el.value;
+    });
+
+    // Captures all selected Radios
+    document.querySelectorAll('input[type="radio"]:checked').forEach(r => {
+        if (r.name.startsWith('panas_')) {
+            responses[r.name] = parseInt(r.value, 10);
+        } else if (r.name in responses) {
+            responses[r.name] = r.value;
+        }
+    });
+
+    // Captures all Checkboxes (specifically for fs_* and ib_* maps)
+    const CHECKBOX_MAP = {
+        friendship_source: { 'Classes': 'fs_classes', 'Hostel/Living space': 'fs_hostel', 'Clubs/Events': 'fs_clubs', 'Mutual friends': 'fs_mutual', 'Online platforms': 'fs_online', 'Other': 'fs_other' },
+        initiation_barriers: { 'Fear of rejection': 'ib_fear_rejection', 'Not knowing what to say': 'ib_not_knowing', 'Already formed friend groups': 'ib_formed_groups', 'Lack of common topic': 'ib_no_topic', 'Low energy': 'ib_low_energy', 'Nothing stops me': 'ib_nothing', 'Other': 'ib_other' }
+    };
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        const fieldMap = CHECKBOX_MAP[cb.name];
+        if (fieldMap && fieldMap[cb.value]) {
+            responses[fieldMap[cb.value]] = cb.checked;
+        }
+    });
+
     computePanasScores();
 
     // ── Run trait engine ────────────────────────────────────────
@@ -351,7 +379,6 @@ async function submitSurvey() {
     const record = {
         ...responses,
         completion_time_seconds: completionSecs,
-        // Trait vector (0–100 per trait)
         trait_ER: engineResult?.traits?.ER ?? null,
         trait_CR: engineResult?.traits?.CR ?? null,
         trait_SI: engineResult?.traits?.SI ?? null,
@@ -362,6 +389,8 @@ async function submitSurvey() {
         archetype: engineResult?.archetypeKey ?? null,
         suspect_submission: engineResult?.suspect ?? false,
     };
+
+    console.log('[Survey] Final Local Record Built:', record);
 
     // Store result separately so result page can read it without parsing all responses
     try {
