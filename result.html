@@ -578,6 +578,142 @@
                 padding: 32px 20px;
             }
         }
+
+        /* ═══════════════════════════════════════════════
+           FEEDBACK POPUP
+        ═══════════════════════════════════════════════ */
+        .feedback-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 320px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feedback-popup.visible {
+            transform: translateX(0);
+        }
+
+        .feedback-content {
+            text-align: left;
+        }
+
+        .feedback-question {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--label-primary);
+            line-height: 1.4;
+            margin-bottom: 16px;
+            letter-spacing: -0.01em;
+        }
+
+        .feedback-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .feedback-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-family: var(--sf);
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s var(--ease);
+        }
+
+        .feedback-btn-yes {
+            background: var(--label-primary);
+            color: #fff;
+        }
+
+        .feedback-btn-no {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--label-primary);
+        }
+
+        .feedback-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .feedback-popup.submitted {
+            width: auto;
+            min-width: 240px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .feedback-popup.submitted .feedback-content {
+            display: none;
+        }
+
+        .feedback-thanks {
+            display: none;
+            font-size: 14px;
+            color: #000;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .feedback-popup.submitted .feedback-thanks {
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════════════
+           TOAST NOTIFICATION (Top-Center)
+        ═══════════════════════════════════════════════ */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translate(-50%, -100px);
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-family: var(--sf-text);
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+
+        .toast-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+        }
     </style>
 </head>
 
@@ -639,15 +775,11 @@
                 <p class="share-subtitle">Every social pattern connects differently. Share yours and see who complements
                     you.</p>
                 <div class="share-btns">
-                    <a href="https://keshavdubey-gif.github.io/uiudp/" class="share-btn share-btn-primary"
-                        target="_blank">
+                    <button class="share-btn share-btn-primary" onclick="copyShareLink()">
                         🚀 &nbsp;Share with friends
-                    </a>
+                    </button>
                     <button class="share-btn share-btn-secondary" onclick="downloadShareCard()">
                         📥 &nbsp;Download Result Card
-                    </button>
-                    <button class="share-btn share-btn-secondary" onclick="copyShareLink()">
-                        🔗 &nbsp;Copy Share Link
                     </button>
                 </div>
             </div>
@@ -660,8 +792,36 @@
         </footer>
     </div>
 
+    <!-- Feedback Popup -->
+    <div id="feedback-popup" class="feedback-popup">
+        <div class="feedback-content">
+            <p class="feedback-question">Does this really define your archetype? Can you relate or not?</p>
+            <div class="feedback-actions">
+                <button class="feedback-btn feedback-btn-yes" onclick="submitFeedback(true)">
+                    👍 &nbsp;I relate
+                </button>
+                <button class="feedback-btn feedback-btn-no" onclick="submitFeedback(false)">
+                    👎 &nbsp;Not really
+                </button>
+            </div>
+        </div>
+        <div class="feedback-thanks">
+            ✅ Thank you for your feedback!
+        </div>
+    </div>
+
+    <!-- Share Toast -->
+    <div id="share-toast" class="toast">
+        <div class="toast-dot"></div>
+        <span>Link copied to clipboard!</span>
+    </div>
+
     <!-- Hidden canvas for share card -->
     <canvas id="share-canvas" width="1080" height="1080"></canvas>
+
+    <!-- Cloud Storage (Supabase) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
 
     <!-- Engine scripts -->
     <script src="scoring.js"></script>
@@ -818,6 +978,19 @@
             }, { threshold: 0.15 });
             revealEls.forEach(el => revealObs.observe(el));
 
+            // Feedback Modal Trigger
+            const feedbackPopup = document.getElementById('feedback-popup');
+            let feedbackShown = false;
+
+            window.addEventListener('scroll', () => {
+                if (feedbackShown) return;
+                const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+                if (scrollPercent > 30) {
+                    feedbackPopup.classList.add('visible');
+                    feedbackShown = true;
+                }
+            });
+
             // Animate trait bars when trait card visible
             const traitCard = document.getElementById('traits');
             let barsAnimated = false;
@@ -878,76 +1051,106 @@
             const R = JSON.parse(resultRaw);
             const arch = R.archetype || ARCHETYPES[R.archetypeKey];
             const traitRanked = R.traitRanked;
+            const insight = R.insight;
 
             const canvas = document.getElementById('share-canvas');
             const ctx = canvas.getContext('2d');
-            const W = 1080, H = 1080;
+            const W = 1200, H = 1550; // Adjusted for content + padded footer
+            canvas.width = W;
+            canvas.height = H;
 
             // ── Background gradient
-            const hexMatch = arch.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#667eea', '#764ba2'];
-            const grd = ctx.createLinearGradient(0, 0, W, H);
+            const hexMatch = arch.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#1a1a1a', '#000000'];
+            const grd = ctx.createLinearGradient(0, 0, 0, H);
             grd.addColorStop(0, hexMatch[0]);
             grd.addColorStop(1, hexMatch[1] || hexMatch[0]);
             ctx.fillStyle = grd;
             ctx.fillRect(0, 0, W, H);
 
-            // ── Grain overlay (subtle noise texture)
-            ctx.fillStyle = 'rgba(255,255,255,0.02)';
-            for (let i = 0; i < 8000; i++) {
+            // ── Grain overlay
+            ctx.fillStyle = 'rgba(255,255,255,0.025)';
+            for (let i = 0; i < 15000; i++) {
                 const x = Math.random() * W;
                 const y = Math.random() * H;
-                ctx.fillRect(x, y, 1.5, 1.5);
+                ctx.fillRect(x, y, 1.2, 1.2);
             }
 
-            // ── Symbol
-            ctx.font = '80px serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-            ctx.fillText(arch.symbol, W / 2, 280);
+            const padding = 160;
 
-            // ── Title
-            ctx.font = '700 64px Inter, -apple-system, sans-serif';
+            // ── Symbol & Title
+            ctx.font = '100px serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.fillText(arch.symbol, W / 2, 220);
+
+            ctx.font = '700 80px Inter, -apple-system, sans-serif';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(arch.label, W / 2, 380);
+            ctx.fillText(arch.label, W / 2, 330);
 
             // ── Tagline
-            ctx.font = '400 26px Inter, -apple-system, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.75)';
-            wrapText(ctx, arch.tagline, W / 2, 440, W - 160, 36);
+            ctx.font = '400 34px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            wrapText(ctx, arch.tagline, W / 2, 400, W - (padding * 2), 48, true);
 
-            // ── Top 2 traits
-            const t1 = traitRanked[0];
-            const t2 = traitRanked[1];
-
+            // ── Trait Profile Section
+            let currentY = 560;
             ctx.font = '600 28px Inter, -apple-system, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillText('TRAIT PROFILE', padding, currentY);
+            currentY += 60;
 
-            // Trait pills
-            const pillY = 580;
-            drawPill(ctx, W / 2 - 220, pillY, `${t1.label}  ${t1.score}`, hexMatch[0]);
-            drawPill(ctx, W / 2 + 20, pillY, `${t2.label}  ${t2.score}`, hexMatch[1] || hexMatch[0]);
+            const barFullWidth = W - (padding * 2);
+            traitRanked.forEach((t) => {
+                // Label
+                ctx.font = '600 28px Inter, -apple-system, sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,1)';
+                ctx.textAlign = 'left';
+                ctx.fillText(t.label, padding, currentY + 28);
 
-            // ── Divider line
-            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                // Score
+                ctx.font = '700 28px Inter, -apple-system, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(t.score.toString(), W - padding, currentY + 28);
+
+                // Bar Container
+                currentY += 50;
+                ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                roundRect(ctx, padding, currentY, barFullWidth, 14, 7);
+                ctx.fill();
+
+                // Bar Fill
+                ctx.fillStyle = '#ffffff';
+                const fillWidth = (t.score / 100) * barFullWidth;
+                roundRect(ctx, padding, currentY, Math.max(fillWidth, 14), 14, 7);
+                ctx.fill();
+
+                currentY += 75; // Consistent vertical spacing
+            });
+
+            currentY += 40; // Space before footer
+
+            // ── Footer line
+            const topPadding = 160;
+            const bottomPadding = topPadding * 1.4; // 40% more than top
+            const footerY = H - bottomPadding;
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(140, 700);
-            ctx.lineTo(W - 140, 700);
+            ctx.moveTo(padding, footerY - 60);
+            ctx.lineTo(W - padding, footerY - 60);
             ctx.stroke();
 
-            // ── Footer CTA
-            ctx.font = '600 24px Inter, -apple-system, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.fillText('Campus Social Identity Experience', W / 2, 800);
-
-            ctx.font = '700 32px Inter, -apple-system, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            ctx.fillText('Find yours.', W / 2, 860);
+            ctx.font = '600 26px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.textAlign = 'center';
+            ctx.fillText('Campus Social Identity Experience · 2026', W / 2, footerY);
 
             // ── Download
             const link = document.createElement('a');
             link.download = `my-social-identity-${R.archetypeKey}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
         }
 
@@ -977,21 +1180,26 @@
             ctx.closePath();
         }
 
-        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight, center = false) {
             const words = text.split(' ');
             let line = '';
             let yy = y;
+            const W = ctx.canvas.width;
+            ctx.textAlign = center ? 'center' : 'left';
+            const drawX = center ? W / 2 : x;
+
             for (const word of words) {
                 const test = line + word + ' ';
                 if (ctx.measureText(test).width > maxWidth && line !== '') {
-                    ctx.fillText(line.trim(), x, yy);
+                    ctx.fillText(line.trim(), drawX, yy);
                     line = word + ' ';
                     yy += lineHeight;
                 } else {
                     line = test;
                 }
             }
-            ctx.fillText(line.trim(), x, yy);
+            ctx.fillText(line.trim(), drawX, yy);
+            return yy + lineHeight;
         }
 
         /* ══════════════════════════════════════════════════
@@ -1000,13 +1208,60 @@
         function copyShareLink() {
             const url = "https://keshavdubey-gif.github.io/uiudp/";
             navigator.clipboard.writeText(url).then(() => {
-                const btn = event.target.closest('.share-btn');
-                const orig = btn.innerHTML;
-                btn.innerHTML = '✅ &nbsp;Link Copied!';
-                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+                showShareToast();
             }).catch(() => {
-                alert('Could not copy link. Please share this URL:\n' + window.location.href);
+                alert('Could not copy link. Please share this URL:\n' + url);
             });
+        }
+
+        function showShareToast() {
+            const t = document.getElementById('share-toast');
+            if (!t) return;
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        /* ══════════════════════════════════════════════════
+           FEEDBACK SUBMISSION
+        ══════════════════════════════════════════════════ */
+        async function submitFeedback(relates) {
+            const popup = document.getElementById('feedback-popup');
+
+            // Mark as submitted to trigger CSS changes
+            popup.classList.add('submitted');
+
+            const resultRaw = localStorage.getItem('last_result');
+            const R = resultRaw ? JSON.parse(resultRaw) : null;
+
+            // Log for research
+            console.log(`[Research] User relates to archetype: ${relates}`);
+
+            // Send to Supabase
+            const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+            if (sb && R) {
+                try {
+                    const { error } = await sb
+                        .from('archetype_feedback')
+                        .insert({
+                            archetype: R.archetypeKey,
+                            relates: relates,
+                            response_id: localStorage.getItem('last_response_id') || null
+                        });
+                    if (error) throw error;
+                    console.log('[Supabase] Feedback recorded successfully');
+                } catch (err) {
+                    console.warn('[Supabase] Feedback save failed:', err);
+                }
+            }
+
+            // Save to local storage to prevent showing it again
+            localStorage.setItem('feedback_submitted', 'true');
+
+            // Fade out after 3 seconds
+            setTimeout(() => {
+                popup.classList.remove('visible');
+            }, 3000);
         }
     </script>
 </body>
