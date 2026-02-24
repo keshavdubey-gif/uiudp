@@ -1,4 +1,4 @@
--- IIIT Campus Social Experience Survey
+-- Campus Social Experience Survey
 -- supabase-schema.sql
 
 -- 1. Create the table

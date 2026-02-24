@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════
-   survey.js  –  IIIT Campus Social Experience Survey
+   survey.js  –  Campus Social Experience Survey
    Pages: 1 Consent · 2 PANAS · 3 Demographics ·
           4 Social Exp & Behavior · 5 Initiation ·
           6 Context & Insights · 7 Completion

@@ -639,7 +639,11 @@
                 <p class="share-subtitle">Every social pattern connects differently. Share yours and see who complements
                     you.</p>
                 <div class="share-btns">
-                    <button class="share-btn share-btn-primary" onclick="downloadShareCard()">
+                    <a href="https://keshavdubey-gif.github.io/uiudp/" class="share-btn share-btn-primary"
+                        target="_blank">
+                        🚀 &nbsp;Share with friends
+                    </a>
+                    <button class="share-btn share-btn-secondary" onclick="downloadShareCard()">
                         📥 &nbsp;Download Result Card
                     </button>
                     <button class="share-btn share-btn-secondary" onclick="copyShareLink()">
@@ -652,7 +656,7 @@
 
 
         <footer class="page-footer">
-            Campus Social Identity Experience · IIIT Design Research · 2026
+            Campus Social Identity Experience · Design Research · 2026
         </footer>
     </div>
 
@@ -994,7 +998,7 @@
            COPY SHARE LINK
         ══════════════════════════════════════════════════ */
         function copyShareLink() {
-            const url = window.location.origin + window.location.pathname;
+            const url = "https://keshavdubey-gif.github.io/uiudp/";
             navigator.clipboard.writeText(url).then(() => {
                 const btn = event.target.closest('.share-btn');
                 const orig = btn.innerHTML;

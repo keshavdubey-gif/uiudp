@@ -1,5 +1,5 @@
 /**
- * IIIT Campus Social Experience Survey
+ * Campus Social Experience Survey
  * supabase-client.js
  */
 

@@ -1,5 +1,5 @@
 /**
- * IIIT Campus Social Experience Survey
+ * Campus Social Experience Survey
  * admin.js — Auth, analytics, CSV/Excel export
  */
 
