@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Social Identity — Campus Connect</title>
+    <meta name="description" content="Discover your campus social identity archetype." />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        /* ═══════════════════════════════════════════════
+           DESIGN TOKENS
+        ═══════════════════════════════════════════════ */
+        :root {
+            --sf: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --label-primary: #1d1d1f;
+            --label-secondary: #6e6e73;
+            --label-tertiary: #aeaeb2;
+            --bg-page: #f5f5f7;
+            --bg-card: #ffffff;
+            --blue: #007aff;
+            --green: #34c759;
+            --separator: rgba(60, 60, 67, 0.12);
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-2xl: 24px;
+            --shadow-card: 0 2px 20px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.08);
+            --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* ═══════════════════════════════════════════════
+           RESET & GLOBAL
+        ═══════════════════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--sf);
+            background: var(--bg-page);
+            color: var(--label-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION 1 — CINEMATIC HERO
+        ═══════════════════════════════════════════════ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 24px;
+            position: relative;
+            overflow: hidden;
+            /* Default gradient — overridden by JS */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        /* Grain texture overlay */
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            background-size: 256px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .hero>* {
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .hero-pre {
+            font-size: 16px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            opacity: 0;
+            animation: fadeUp 600ms var(--ease) 200ms forwards;
+        }
+
+        .hero-title {
+            font-size: clamp(36px, 8vw, 64px);
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: scale(0.88);
+            animation: scaleUp 700ms var(--ease) 400ms forwards;
+        }
+
+        .hero-tagline {
+            font-size: clamp(16px, 3vw, 20px);
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.85);
+            max-width: 480px;
+            line-height: 1.6;
+            letter-spacing: -0.016em;
+            margin-bottom: 28px;
+            opacity: 0;
+            animation: fadeUp 600ms var(--ease) 700ms forwards;
+        }
+
+        .hero-drivers {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.55);
+            letter-spacing: -0.01em;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: fadeUp 600ms var(--ease) 900ms forwards;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 28px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            font-family: var(--sf);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s var(--ease);
+            text-decoration: none;
+            opacity: 0;
+            animation: fadeUp 600ms var(--ease) 1100ms forwards;
+        }
+
+        .hero-cta:hover {
+            background: rgba(255, 255, 255, 0.28);
+            transform: translateY(-2px);
+        }
+
+        .hero-symbol {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0;
+            animation: fadeUp 600ms var(--ease) 100ms forwards;
+        }
+
+        /* Suspect banner */
+        .suspect-banner {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            display: none;
+        }
+
+        .suspect-banner.visible {
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════════════
+           CONTENT SECTIONS
+        ═══════════════════════════════════════════════ */
+        .content-wrap {
+            max-width: 620px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-card);
+            padding: 36px;
+            margin-top: -48px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .section-card+.section-card {
+            margin-top: 24px;
+        }
+
+        .section-heading {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--label-primary);
+            margin-bottom: 24px;
+        }
+
+        .section-heading .icon {
+            margin-right: 8px;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION 2 — TRAIT BARS
+        ═══════════════════════════════════════════════ */
+        .trait-item {
+            margin-bottom: 22px;
+        }
+
+        .trait-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .trait-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .trait-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--label-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .trait-score {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--label-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .trait-bar-track {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f2;
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .trait-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            width: 0;
+            transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+
+
+        .trait-desc {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--label-secondary);
+            letter-spacing: -0.008em;
+            line-height: 1.5;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION 3 — NARRATIVE
+        ═══════════════════════════════════════════════ */
+        .narrative-text {
+            font-size: 16px;
+            line-height: 1.75;
+            color: var(--label-primary);
+            letter-spacing: -0.016em;
+        }
+
+        .narrative-text+.narrative-text {
+            margin-top: 16px;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION 4 — GROWTH EDGE
+        ═══════════════════════════════════════════════ */
+        .growth-card-inner {
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.06) 0%, rgba(52, 199, 89, 0.06) 100%);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border-left: 4px solid var(--blue);
+        }
+
+        .growth-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--label-primary);
+            letter-spacing: -0.012em;
+        }
+
+        .growth-suggest {
+            font-size: 14px;
+            color: var(--label-secondary);
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION 5 — CURIOSITY TRIGGER
+        ═══════════════════════════════════════════════ */
+        .curiosity-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--label-secondary);
+            font-style: italic;
+            letter-spacing: -0.012em;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SECTION 6 — SHARE BLOCK
+        ═══════════════════════════════════════════════ */
+        .share-subtitle {
+            font-size: 15px;
+            color: var(--label-secondary);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .share-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .share-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px 24px;
+            border-radius: var(--radius-lg);
+            font-family: var(--sf);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s var(--ease);
+            letter-spacing: -0.02em;
+        }
+
+        .share-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .share-btn:active {
+            transform: scale(0.98);
+        }
+
+        .share-btn-primary {
+            background: var(--label-primary);
+            color: #fff;
+        }
+
+        .share-btn-primary:hover {
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .share-btn-secondary {
+            background: #f0f0f2;
+            color: var(--label-primary);
+        }
+
+        .share-btn-secondary:hover {
+            background: #e8e8ea;
+        }
+
+        /* ═══════════════════════════════════════════════
+           FRIEND GUESSER
+        ═══════════════════════════════════════════════ */
+        .friend-section {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        .friend-heading {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--label-primary);
+            margin-bottom: 8px;
+        }
+
+        .friend-sub {
+            font-size: 14px;
+            color: var(--label-secondary);
+            margin-bottom: 24px;
+        }
+
+        .archetype-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .archetype-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 6px;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s var(--ease);
+            border: 2px solid transparent;
+            background: var(--bg-card);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .archetype-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .archetype-chip.selected {
+            border-color: var(--blue);
+            background: rgba(0, 122, 255, 0.06);
+        }
+
+        .archetype-chip-icon {
+            font-size: 24px;
+        }
+
+        .archetype-chip-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--label-secondary);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .friend-response {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--label-secondary);
+            min-height: 20px;
+            transition: opacity 0.3s;
+        }
+
+        /* ═══════════════════════════════════════════════
+           SHARE CANVAS (hidden)
+        ═══════════════════════════════════════════════ */
+        #share-canvas {
+            display: none;
+        }
+
+        /* ═══════════════════════════════════════════════
+           ANIMATIONS
+        ═══════════════════════════════════════════════ */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleUp {
+            from {
+                opacity: 0;
+                transform: scale(0.88);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Scroll reveal for content sections */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ═══════════════════════════════════════════════
+           FOOTER
+        ═══════════════════════════════════════════════ */
+        .page-footer {
+            text-align: center;
+            padding: 32px 20px 48px;
+            font-size: 12px;
+            color: var(--label-tertiary);
+        }
+
+        /* ═══════════════════════════════════════════════
+           NO RESULT STATE
+        ═══════════════════════════════════════════════ */
+        .no-result {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .no-result h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .no-result p {
+            font-size: 16px;
+            color: var(--label-secondary);
+            margin-bottom: 24px;
+            max-width: 400px;
+        }
+
+        .no-result a {
+            color: var(--blue);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* ═══════════════════════════════════════════════
+           RESPONSIVE
+        ═══════════════════════════════════════════════ */
+        @media (max-width: 620px) {
+            .section-card {
+                padding: 24px 20px;
+                border-radius: var(--radius-xl);
+            }
+
+            .archetype-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .hero {
+                padding: 32px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- No Result Fallback (hidden by JS when result exists) -->
+    <div class="no-result" id="no-result">
+        <h1>No result found</h1>
+        <p>Complete the survey first to discover your social identity archetype.</p>
+        <a href="index.html">Take the Survey →</a>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         MAIN RESULT (hidden until JS populates)
+    ═══════════════════════════════════════════════ -->
+    <div id="result-page" style="display:none;">
+
+        <!-- SECTION 1 — Cinematic Hero -->
+        <section class="hero" id="hero">
+            <div class="suspect-banner" id="suspect-banner">
+                ⏱ You moved through this quickly. Results may be less accurate.
+            </div>
+            <div class="hero-symbol" id="hero-symbol"></div>
+            <div class="hero-pre">You are</div>
+            <h1 class="hero-title" id="hero-title"></h1>
+            <p class="hero-tagline" id="hero-tagline"></p>
+            <p class="hero-drivers" id="hero-drivers"></p>
+            <a href="#traits" class="hero-cta">See what this means ↓</a>
+        </section>
+
+        <div class="content-wrap">
+
+            <!-- SECTION 2 — Trait Breakdown -->
+            <div class="section-card reveal" id="traits">
+                <h2 class="section-heading"><span class="icon">📊</span>Your Trait Profile</h2>
+                <div id="trait-bars"></div>
+            </div>
+
+            <!-- SECTION 3 — Personalized Narrative -->
+            <div class="section-card reveal" id="narrative-card">
+                <h2 class="section-heading"><span class="icon">🔍</span>What shapes your social pattern</h2>
+                <div id="narrative-body"></div>
+            </div>
+
+            <!-- SECTION 4 — Growth Edge -->
+            <div class="section-card reveal" id="growth-card">
+                <h2 class="section-heading"><span class="icon">🌱</span>Your Growth Edge</h2>
+                <div class="growth-card-inner">
+                    <p class="growth-text" id="growth-text"></p>
+                    <p class="growth-suggest" id="growth-suggest"></p>
+                </div>
+            </div>
+
+
+
+            <!-- SECTION 6 — Share -->
+            <div class="section-card reveal" id="share-card">
+                <h2 class="section-heading"><span class="icon">🔗</span>Compare with your friends</h2>
+                <p class="share-subtitle">Every social pattern connects differently. Share yours and see who complements
+                    you.</p>
+                <div class="share-btns">
+                    <button class="share-btn share-btn-primary" onclick="downloadShareCard()">
+                        📥 &nbsp;Download Result Card
+                    </button>
+                    <button class="share-btn share-btn-secondary" onclick="copyShareLink()">
+                        🔗 &nbsp;Copy Share Link
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <footer class="page-footer">
+            Campus Social Identity Experience · IIIT Design Research · 2026
+        </footer>
+    </div>
+
+    <!-- Hidden canvas for share card -->
+    <canvas id="share-canvas" width="1080" height="1080"></canvas>
+
+    <!-- Engine scripts -->
+    <script src="scoring.js"></script>
+    <script src="engine.js"></script>
+
+    <script>
+        'use strict';
+
+        /* ══════════════════════════════════════════════════
+           BOOT
+        ══════════════════════════════════════════════════ */
+        const resultRaw = localStorage.getItem('last_result');
+        if (!resultRaw) {
+            document.getElementById('no-result').style.display = 'flex';
+        } else {
+            document.getElementById('no-result').style.display = 'none';
+            document.getElementById('result-page').style.display = 'block';
+
+            const R = JSON.parse(resultRaw);
+            populateResult(R);
+        }
+
+        /* ══════════════════════════════════════════════════
+           POPULATE
+        ══════════════════════════════════════════════════ */
+        function populateResult(R) {
+            const arch = R.archetype || ARCHETYPES[R.archetypeKey];
+            const traits = R.traits;
+            const traitRanked = R.traitRanked;
+            const insight = R.insight;
+
+            // ── HERO ─────────────────────────────────────
+            const hero = document.getElementById('hero');
+            hero.style.background = arch.gradient;
+            hero.style.backgroundSize = '200% 200%';
+
+            document.getElementById('hero-symbol').textContent = arch.symbol;
+            document.getElementById('hero-title').textContent = arch.label;
+            document.getElementById('hero-tagline').textContent = arch.tagline;
+
+            // Drivers line
+            const top2 = traitRanked.slice(0, 2);
+            document.getElementById('hero-drivers').textContent =
+                `Your social pattern is driven by ${top2[0].label} (${top2[0].score}) and ${top2[1].label} (${top2[1].score}).`;
+
+            // Suspect
+            if (R.suspect) {
+                document.getElementById('suspect-banner').classList.add('visible');
+            }
+
+            // ── TRAIT BARS ───────────────────────────────
+            const barsEl = document.getElementById('trait-bars');
+            const barColors = generateBarColors(arch.gradient, traitRanked.length);
+
+            traitRanked.forEach((t, i) => {
+                const score = t.score;
+                const desc = score >= 60
+                    ? INSIGHT_TEMPLATES.high[t.id]
+                    : INSIGHT_TEMPLATES.low[t.id];
+
+                const item = document.createElement('div');
+                item.className = 'trait-item';
+                item.innerHTML = `
+                <div class="trait-header">
+                    <span class="trait-name">${t.label}</span>
+                    <span class="trait-score">${score}</span>
+                </div>
+                <div class="trait-bar-track">
+                    <div class="trait-bar-fill" id="bar-${i}"
+                         style="background:${barColors[i]};"></div>
+                </div>
+                <div class="trait-desc">${desc || t.desc}</div>
+            `;
+                barsEl.appendChild(item);
+            });
+
+            // Animate bars on scroll
+            observeAndAnimate(traitRanked);
+
+            // ── NARRATIVE ────────────────────────────────
+            const narBody = document.getElementById('narrative-body');
+            if (insight && insight.primaryInsight) {
+                const sentences = insight.primaryInsight.split('. ').filter(Boolean);
+                // Split into 2 paragraphs for readability
+                const mid = Math.ceil(sentences.length / 2);
+                const p1 = sentences.slice(0, mid).join('. ') + '.';
+                const p2 = sentences.slice(mid).join('. ');
+                if (p2) {
+                    narBody.innerHTML = `
+                    <p class="narrative-text">${p1}</p>
+                    <p class="narrative-text">${p2}</p>`;
+                } else {
+                    narBody.innerHTML = `<p class="narrative-text">${p1}</p>`;
+                }
+            }
+
+            // ── GROWTH EDGE ──────────────────────────────
+            const lowest = traitRanked[traitRanked.length - 1];
+            const growthEl = document.getElementById('growth-text');
+            growthEl.textContent = insight?.growthEdge ||
+                INSIGHT_TEMPLATES.low[lowest.id] || '';
+
+            const suggestEl = document.getElementById('growth-suggest');
+            suggestEl.textContent =
+                `If you increased your ${lowest.label} by just 10–15 points, your ability to navigate new social contexts would grow dramatically.`;
+
+            // ── CURIOSITY TRIGGER ────────────────────────
+            const curiosityEl = document.getElementById('curiosity-text');
+            curiosityEl.textContent = insight?.socialCuriosity ||
+                `${arch.label}s show a distinctive pattern across campus. Your combination of traits is less common than you might think.`;
+
+            // ── FRIEND GUESSER ───────────────────────────
+            buildFriendGuesser();
+        }
+
+        /* ══════════════════════════════════════════════════
+           BAR COLOR GENERATION
+        ══════════════════════════════════════════════════ */
+        function generateBarColors(gradient, count) {
+            // Parse start/end from gradient string
+            const hexMatch = gradient.match(/#[0-9a-fA-F]{6}/g) || ['#007aff', '#5856d6'];
+            const start = hexToRgb(hexMatch[0]);
+            const end = hexToRgb(hexMatch[1] || hexMatch[0]);
+
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                const t = count === 1 ? 0 : i / (count - 1);
+                const r = Math.round(start.r + (end.r - start.r) * t);
+                const g = Math.round(start.g + (end.g - start.g) * t);
+                const b = Math.round(start.b + (end.b - start.b) * t);
+                colors.push(`rgb(${r},${g},${b})`);
+            }
+            return colors;
+        }
+
+        function hexToRgb(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+        }
+
+        /* ══════════════════════════════════════════════════
+           SCROLL ANIMATION (IntersectionObserver)
+        ══════════════════════════════════════════════════ */
+        function observeAndAnimate(traitRanked) {
+            // Reveal cards on scroll
+            const revealEls = document.querySelectorAll('.reveal');
+            const revealObs = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                        revealObs.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            revealEls.forEach(el => revealObs.observe(el));
+
+            // Animate trait bars when trait card visible
+            const traitCard = document.getElementById('traits');
+            let barsAnimated = false;
+
+            const barObs = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting && !barsAnimated) {
+                        barsAnimated = true;
+                        traitRanked.forEach((t, i) => {
+                            setTimeout(() => {
+                                const bar = document.getElementById(`bar-${i}`);
+                                if (bar) {
+                                    bar.style.width = `${t.score}%`;
+                                    bar.classList.add('animated');
+                                }
+                            }, i * 120);
+                        });
+                        barObs.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.2 });
+            barObs.observe(traitCard);
+        }
+
+        /* ══════════════════════════════════════════════════
+           FRIEND GUESSER
+        ══════════════════════════════════════════════════ */
+        function buildFriendGuesser() {
+            const grid = document.getElementById('archetype-grid');
+            const responseEl = document.getElementById('friend-response');
+            const archetypeKeys = Object.keys(ARCHETYPES);
+
+            archetypeKeys.forEach(key => {
+                const a = ARCHETYPES[key];
+                const chip = document.createElement('div');
+                chip.className = 'archetype-chip';
+                chip.dataset.key = key;
+                chip.innerHTML = `
+                <span class="archetype-chip-icon">${a.symbol}</span>
+                <span class="archetype-chip-label">${a.label.replace('The ', '')}</span>
+            `;
+                chip.addEventListener('click', () => {
+                    grid.querySelectorAll('.archetype-chip').forEach(c => c.classList.remove('selected'));
+                    chip.classList.add('selected');
+                    responseEl.textContent = `"${a.tagline}" — Send them the survey to find out!`;
+                    responseEl.style.opacity = '1';
+                });
+                grid.appendChild(chip);
+            });
+        }
+
+        /* ══════════════════════════════════════════════════
+           SHARE CARD GENERATION (Canvas → PNG)
+        ══════════════════════════════════════════════════ */
+        function downloadShareCard() {
+            const resultRaw = localStorage.getItem('last_result');
+            if (!resultRaw) return;
+            const R = JSON.parse(resultRaw);
+            const arch = R.archetype || ARCHETYPES[R.archetypeKey];
+            const traitRanked = R.traitRanked;
+
+            const canvas = document.getElementById('share-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = 1080, H = 1080;
+
+            // ── Background gradient
+            const hexMatch = arch.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#667eea', '#764ba2'];
+            const grd = ctx.createLinearGradient(0, 0, W, H);
+            grd.addColorStop(0, hexMatch[0]);
+            grd.addColorStop(1, hexMatch[1] || hexMatch[0]);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, W, H);
+
+            // ── Grain overlay (subtle noise texture)
+            ctx.fillStyle = 'rgba(255,255,255,0.02)';
+            for (let i = 0; i < 8000; i++) {
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+                ctx.fillRect(x, y, 1.5, 1.5);
+            }
+
+            // ── Symbol
+            ctx.font = '80px serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText(arch.symbol, W / 2, 280);
+
+            // ── Title
+            ctx.font = '700 64px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(arch.label, W / 2, 380);
+
+            // ── Tagline
+            ctx.font = '400 26px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.75)';
+            wrapText(ctx, arch.tagline, W / 2, 440, W - 160, 36);
+
+            // ── Top 2 traits
+            const t1 = traitRanked[0];
+            const t2 = traitRanked[1];
+
+            ctx.font = '600 28px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+
+            // Trait pills
+            const pillY = 580;
+            drawPill(ctx, W / 2 - 220, pillY, `${t1.label}  ${t1.score}`, hexMatch[0]);
+            drawPill(ctx, W / 2 + 20, pillY, `${t2.label}  ${t2.score}`, hexMatch[1] || hexMatch[0]);
+
+            // ── Divider line
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(140, 700);
+            ctx.lineTo(W - 140, 700);
+            ctx.stroke();
+
+            // ── Footer CTA
+            ctx.font = '600 24px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText('Campus Social Identity Experience', W / 2, 800);
+
+            ctx.font = '700 32px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText('Find yours.', W / 2, 860);
+
+            // ── Download
+            const link = document.createElement('a');
+            link.download = `my-social-identity-${R.archetypeKey}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function drawPill(ctx, x, y, text, bgColor) {
+            const w = 200, h = 44, r = 22;
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            roundRect(ctx, x, y, w, h, r);
+            ctx.fill();
+
+            ctx.font = '600 18px Inter, -apple-system, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x + w / 2, y + 28);
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            let yy = y;
+            for (const word of words) {
+                const test = line + word + ' ';
+                if (ctx.measureText(test).width > maxWidth && line !== '') {
+                    ctx.fillText(line.trim(), x, yy);
+                    line = word + ' ';
+                    yy += lineHeight;
+                } else {
+                    line = test;
+                }
+            }
+            ctx.fillText(line.trim(), x, yy);
+        }
+
+        /* ══════════════════════════════════════════════════
+           COPY SHARE LINK
+        ══════════════════════════════════════════════════ */
+        function copyShareLink() {
+            const url = window.location.origin + window.location.pathname;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target.closest('.share-btn');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✅ &nbsp;Link Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            }).catch(() => {
+                alert('Could not copy link. Please share this URL:\n' + window.location.href);
+            });
+        }
+    </script>
+</body>
+
+</html>

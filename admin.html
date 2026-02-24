@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survey Admin – IIIT Campus Research</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        /* ── Admin Panel – Apple Design System Light Theme ── */
+        body {
+            background: #F2F2F7;
+        }
+
+        .admin-shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 48px 24px 100px;
+        }
+
+        /* Top bar */
+        .admin-topbar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .admin-topbar h1 {
+            font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-weight: 700;
+            font-size: 28px;
+            letter-spacing: -0.038em;
+            color: #000;
+            margin-top: 6px;
+        }
+
+        .admin-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #007AFF;
+            background: rgba(0, 122, 255, 0.10);
+            border-radius: 99px;
+            padding: 3px 12px;
+        }
+
+        .export-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Stat grid */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 20px 18px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+
+        .stat-card .stat-num {
+            font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.040em;
+            color: #007AFF;
+            line-height: 1.0;
+        }
+
+        .stat-card .stat-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(60, 60, 67, 0.60);
+            margin-top: 5px;
+            letter-spacing: -0.006em;
+        }
+
+        /* Charts grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .chart-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 22px 22px 18px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-card h3 {
+            font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: rgba(60, 60, 67, 0.60);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .chart-card canvas {
+            max-height: 256px;
+        }
+
+        .chart-card.full {
+            grid-column: 1 / -1;
+        }
+
+        /* Response table */
+        .table-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .table-card h3 {
+            font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: rgba(60, 60, 67, 0.60);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: rgba(60, 60, 67, 0.60);
+            border-bottom: 0.5px solid rgba(60, 60, 67, 0.29);
+            white-space: nowrap;
+            background: #F2F2F7;
+        }
+
+        td {
+            padding: 11px 14px;
+            font-size: 14px;
+            letter-spacing: -0.016em;
+            color: #000;
+            border-bottom: 0.5px solid rgba(60, 60, 67, 0.12);
+            white-space: nowrap;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(0, 122, 255, 0.04);
+        }
+
+        /* Auth overlay */
+        .auth-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: #F2F2F7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 40px 36px 36px;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+
+        .auth-card h2 {
+            font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.030em;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        .auth-card>p {
+            font-size: 15px;
+            color: rgba(60, 60, 67, 0.60);
+            margin-bottom: 24px;
+            line-height: 1.55;
+        }
+
+        .auth-error {
+            color: #FF3B30;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(60, 60, 67, 0.40);
+            font-size: 15px;
+        }
+
+        .empty-state .icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        @media (max-width: 700px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-card.full {
+                grid-column: auto;
+            }
+
+            .admin-shell {
+                padding: 32px 14px 80px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Auth Gate -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-card">
+            <div style="font-size:36px;margin-bottom:14px;">🔐</div>
+            <h2>Admin Access</h2>
+            <p>Enter your credentials to view survey data and analytics.</p>
+            <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="auth-user">Username</label>
+                <input type="text" class="form-input" id="auth-user" placeholder="admin" autocomplete="username" />
+            </div>
+            <div class="form-group" style="text-align:left;">
+                <label class="form-label" for="auth-pass">Password</label>
+                <input type="password" class="form-input" id="auth-pass" placeholder="••••••••"
+                    autocomplete="current-password" />
+            </div>
+            <button class="btn btn-primary" style="width:100%;" onclick="checkAuth()">Sign In</button>
+            <p class="auth-error" id="auth-error">Incorrect username or password.</p>
+        </div>
+    </div>
+
+    <!-- Main Admin Content -->
+    <div class="admin-shell" id="admin-content" style="display:none;">
+
+        <!-- Top bar -->
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-tag">Research Admin</span>
+                <h1>Survey Analytics</h1>
+            </div>
+            <div class="export-bar">
+                <button class="btn btn-ghost" onclick="exportCSV()">⬇&nbsp; Export CSV</button>
+                <button class="btn btn-primary" onclick="exportExcel()">⬇&nbsp; Export Excel</button>
+            </div>
+        </div>
+
+        <!-- Key stats -->
+        <div class="stat-grid" id="stat-grid">
+            <div class="stat-card">
+                <div class="stat-num" id="stat-total">0</div>
+                <div class="stat-label">Total Responses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-belonging">—</div>
+                <div class="stat-label">Avg Belonging</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-initiation">—</div>
+                <div class="stat-label">Avg Initiation</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-disconnected">—%</div>
+                <div class="stat-label">Feel Disconnected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-digital">—</div>
+                <div class="stat-label">Digital Openness</div>
+            </div>
+            <div class="stat-card" style="border-top: 3px solid #34C759;">
+                <div class="stat-num" id="stat-panas-pos" style="color:#34C759;">—</div>
+                <div class="stat-label">Avg Positive Affect <span
+                        style="font-size:10px;color:rgba(60,60,67,.40);">/50</span></div>
+            </div>
+            <div class="stat-card" style="border-top: 3px solid #FF3B30;">
+                <div class="stat-num" id="stat-panas-neg" style="color:#FF3B30;">—</div>
+                <div class="stat-label">Avg Negative Affect <span
+                        style="font-size:10px;color:rgba(60,60,67,.40);">/50</span></div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Avg Likert Scores</h3>
+                <canvas id="chart-likert"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Belonging Breakdown</h3>
+                <canvas id="chart-belonging-donut"></canvas>
+            </div>
+            <div class="chart-card full">
+                <h3>Top Barriers to Connection</h3>
+                <canvas id="chart-barriers"></canvas>
+            </div>
+            <div class="chart-card full">
+                <h3>Belonging Score by Year of Study</h3>
+                <canvas id="chart-year-belonging"></canvas>
+            </div>
+        </div>
+
+        <!-- Response table -->
+        <div class="table-card">
+            <h3>All Responses (latest first)</h3>
+            <div class="table-scroll">
+                <table id="response-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Timestamp</th>
+                            <th>Year</th>
+                            <th>Gender</th>
+                            <th>Residence</th>
+                            <th>Initiation</th>
+                            <th>Belonging</th>
+                            <th>Digital</th>
+                            <th>Comfort</th>
+                            <th>Approached</th>
+                            <th>Wanted→No</th>
+                            <th>Open Text</th>
+                        </tr>
+                    </thead>
+                    <tbody id="response-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Cloud Storage (Google Sheets) -->
+    <script src="google-sheets-client.js"></script>
+
+    <script src="admin.js"></script>
+
+</body>
+
+</html>

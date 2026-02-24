@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IIIT Campus Social Experience Survey</title>
+    <meta name="description"
+        content="An anonymous research survey about campus social experiences at IIIT. Your responses help us understand and improve student life." />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        /* ── PANAS-specific styles ── */
+        .panas-scale-header {
+            display: grid;
+            grid-template-columns: 1fr repeat(5, 44px);
+            gap: 0;
+            align-items: center;
+            padding: 10px 16px 10px 16px;
+            background: #E8E8ED;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 0;
+        }
+
+        .panas-scale-header .panas-item-col {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(60, 60, 67, 0.80);
+            letter-spacing: -0.01em;
+        }
+
+        .panas-scale-header .panas-num-col {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(60, 60, 67, 0.75);
+        }
+
+        /* Full 5-point anchor legend */
+        .panas-legend {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            background: #EFEFF4;
+            border-radius: 0 0 12px 12px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .panas-legend-point {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 4px 10px;
+            border-right: 0.5px solid rgba(60, 60, 67, 0.10);
+            gap: 3px;
+        }
+
+        .panas-legend-point:last-child {
+            border-right: none;
+        }
+
+        .panas-legend-point .pl-num {
+            font-size: 13px;
+            font-weight: 700;
+            color: #007AFF;
+            line-height: 1;
+        }
+
+        .panas-legend-point .pl-desc {
+            font-size: 10px;
+            font-weight: 500;
+            color: rgba(60, 60, 67, 0.65);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* ── Section labels for multi-section pages ── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 28px 0 14px;
+        }
+
+        .section-label-text {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: #007AFF;
+            white-space: nowrap;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: rgba(60, 60, 67, 0.15);
+        }
+
+        /* ── Light divider between questions ── */
+        hr.section-divider {
+            border: none;
+            border-top: 0.5px solid rgba(60, 60, 67, 0.10);
+            margin: 4px 0 12px;
+        }
+
+        /* ── Checkbox groups (multi-select) ── */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(60, 60, 67, 0.14);
+            background: #fff;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .checkbox-option:hover {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.04);
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .custom-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid rgba(60, 60, 67, 0.25);
+            flex-shrink: 0;
+            transition: background 0.15s, border-color 0.15s;
+            position: relative;
+        }
+
+        .checkbox-option input[type="checkbox"]:checked~.custom-checkbox {
+            background: #007AFF;
+            border-color: #007AFF;
+        }
+
+        .checkbox-option input[type="checkbox"]:checked~.custom-checkbox::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 5px;
+            height: 9px;
+            border: 2px solid #fff;
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-option input[type="checkbox"]:checked~.option-label {
+            font-weight: 600;
+            color: #007AFF;
+        }
+
+        /* ── Char counter ── */
+        .char-counter {
+            font-size: 11px;
+            color: rgba(60, 60, 67, 0.40);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .panas-row {
+            display: grid;
+            grid-template-columns: 1fr repeat(5, 44px);
+            gap: 0;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 0.5px solid rgba(60, 60, 67, 0.10);
+            transition: background 0.15s;
+        }
+
+        .panas-row:last-child {
+            border-bottom: none;
+        }
+
+        .panas-row:hover {
+            background: rgba(0, 122, 255, 0.04);
+            border-radius: 10px;
+        }
+
+        .panas-term {
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: -0.016em;
+            color: #000;
+        }
+
+        .panas-term .panas-num {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(60, 60, 67, 0.40);
+            margin-right: 6px;
+        }
+
+        .panas-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Hide native radio; show Cupertino-style circle */
+        .panas-cell input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .panas-cell label {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(60, 60, 67, 0.20);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(60, 60, 67, 0.40);
+            transition: border-color 0.18s, background 0.18s, color 0.18s;
+            user-select: none;
+        }
+
+        .panas-cell input[type="radio"]:checked+label {
+            background: #007AFF;
+            border-color: #007AFF;
+            color: #fff;
+        }
+
+        .panas-cell label:hover {
+            border-color: #007AFF;
+            color: #007AFF;
+        }
+
+        /* Live score display */
+        .panas-score-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .panas-score-card {
+            padding: 16px 18px;
+            border-radius: 14px;
+            text-align: center;
+        }
+
+        .panas-score-card.positive {
+            background: rgba(52, 199, 89, 0.10);
+            border: 1px solid rgba(52, 199, 89, 0.25);
+        }
+
+        .panas-score-card.negative {
+            background: rgba(255, 59, 48, 0.08);
+            border: 1px solid rgba(255, 59, 48, 0.20);
+        }
+
+        .panas-score-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .panas-score-card.positive .panas-score-label {
+            color: #248A3D;
+        }
+
+        .panas-score-card.negative .panas-score-label {
+            color: #C0392B;
+        }
+
+        .panas-score-value {
+            font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.038em;
+            line-height: 1;
+        }
+
+        .panas-score-card.positive .panas-score-value {
+            color: #34C759;
+        }
+
+        .panas-score-card.negative .panas-score-value {
+            color: #FF3B30;
+        }
+
+        .panas-score-range {
+            font-size: 11px;
+            color: rgba(60, 60, 67, 0.45);
+            margin-top: 3px;
+        }
+
+        .panas-score-mean {
+            font-size: 11px;
+            color: rgba(60, 60, 67, 0.50);
+            margin-top: 2px;
+        }
+
+        @media (max-width: 520px) {
+            .panas-scale-header {
+                grid-template-columns: 1fr repeat(5, 36px);
+                padding: 8px 10px;
+            }
+
+            .panas-row {
+                grid-template-columns: 1fr repeat(5, 36px);
+                padding: 9px 10px;
+            }
+
+            .panas-cell label {
+                width: 24px;
+                height: 24px;
+                font-size: 10px;
+            }
+
+            .panas-term {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════
+     SUBMIT CONFIRMATION MODAL
+════════════════════════════════════════════════════ -->
+    <div class="modal-overlay" id="submit-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-card">
+            <div class="modal-icon">📝</div>
+            <h2 class="modal-title" id="modal-title">Submit your responses?</h2>
+            <p class="modal-msg">Once submitted you won't be able to edit your answers. Your participation is completely
+                anonymous.</p>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="modal-cancel">Go Back</button>
+                <button class="btn btn-primary" id="modal-confirm">Submit Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+     AUTO-SAVE TOAST
+════════════════════════════════════════════════════ -->
+    <div class="toast" id="autosave-toast" aria-live="polite">
+        <div class="toast-dot"></div>
+        Progress auto-saved
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+     MAIN SHELL
+════════════════════════════════════════════════════ -->
+    <div class="survey-shell">
+
+        <!-- Header -->
+        <header class="survey-header">
+            <span class="survey-logo">IIIT · Design Research</span>
+            <h1 class="survey-title">Campus Social Experience Survey</h1>
+        </header>
+
+        <!-- Progress bar (hidden on consent & completion pages) -->
+        <div class="progress-wrapper" id="progress-wrapper" style="display:none;">
+            <div class="progress-meta">
+                <span id="progress-label">Section 1 of 3</span>
+                <span id="progress-pct">25%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-fill" style="width:25%;"></div>
+            </div>
+        </div>
+
+        <!-- ─────────────────────────────────────────────
+       PAGE 1 – CONSENT
+  ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page active" id="page-1" role="main">
+
+            <div class="page-badge">🔒 Step 1 of 5 &nbsp;·&nbsp; Consent</div>
+            <h2 class="page-heading">Before you begin</h2>
+            <p class="page-subheading">
+                This survey is part of a UX Design Research study on campus social experiences.
+                It takes <strong>8–10 minutes</strong> to complete. All responses are <strong>fully anonymous</strong> —
+                no names, emails, or student IDs are collected.
+            </p>
+
+            <div class="consent-box">
+                <p class="consent-text">
+                    By participating, you agree that:<br /><br />
+                    ✦ &nbsp;Your responses are <strong>voluntary and anonymous</strong>.<br />
+                    ✦ &nbsp;Data will only be used for academic research purposes.<br />
+                    ✦ &nbsp;You may stop at any time without consequence.<br />
+                    ✦ &nbsp;No personally identifiable information is recorded.<br />
+                    ✦ &nbsp;Aggregated findings may be published in course deliverables.
+                </p>
+
+                <label class="consent-check-row" id="consent-row" for="consent-checkbox">
+                    <input type="checkbox" id="consent-checkbox"
+                        style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;" />
+                    <div class="consent-check-box" id="consent-visual"></div>
+                    <span class="consent-agree">
+                        I understand that my responses are anonymous and I consent to participate in this research
+                        survey.
+                    </span>
+                </label>
+            </div>
+
+            <div class="info-box">
+                <span class="icon">💾</span>
+                <span>Your progress is auto-saved as you go — so even if you accidentally close the tab, your answers
+                    won't be lost.</span>
+            </div>
+
+            <div class="btn-row" style="justify-content:flex-end;">
+                <button class="btn btn-primary" id="consent-btn" disabled aria-label="Proceed to survey">
+                    Begin Survey &nbsp;→
+                </button>
+            </div>
+
+        </main>
+
+        <!-- ─────────────────────────────────────────────
+       PAGE 2 – PANAS
+  ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page" id="page-2" role="main">
+
+            <div class="page-badge">🧠 Step 2 of 5 &nbsp;·&nbsp; Mood Check</div>
+            <h2 class="page-heading">How have you been feeling?</h2>
+            <p class="page-subheading">
+                Indicate the extent you have felt this way <strong>over the past week</strong>. There are no right or
+                wrong answers — just go with your honest first reaction.
+            </p>
+
+            <!-- Scale legend -->
+            <div class="panas-scale-header">
+                <div class="panas-item-col">Feeling</div>
+                <div class="panas-num-col">1</div>
+                <div class="panas-num-col">2</div>
+                <div class="panas-num-col">3</div>
+                <div class="panas-num-col">4</div>
+                <div class="panas-num-col">5</div>
+            </div>
+            <!-- 5-point anchor legend -->
+            <div class="panas-legend">
+                <div class="panas-legend-point">
+                    <span class="pl-num">1</span>
+                    <span class="pl-desc">Very slightly<br>or not at all</span>
+                </div>
+                <div class="panas-legend-point">
+                    <span class="pl-num">2</span>
+                    <span class="pl-desc">A little</span>
+                </div>
+                <div class="panas-legend-point">
+                    <span class="pl-num">3</span>
+                    <span class="pl-desc">Moderately</span>
+                </div>
+                <div class="panas-legend-point">
+                    <span class="pl-num">4</span>
+                    <span class="pl-desc">Quite<br>a bit</span>
+                </div>
+                <div class="panas-legend-point">
+                    <span class="pl-num">5</span>
+                    <span class="pl-desc">Extremely</span>
+                </div>
+            </div>
+
+            <!-- 20 PANAS items -->
+            <div id="panas-items">
+
+                <!-- 1. Interested (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">1.</span>Interested</div>
+                    <div class="panas-cell"><input type="radio" name="panas_1" id="p1-1" value="1" /><label
+                            for="p1-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_1" id="p1-2" value="2" /><label
+                            for="p1-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_1" id="p1-3" value="3" /><label
+                            for="p1-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_1" id="p1-4" value="4" /><label
+                            for="p1-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_1" id="p1-5" value="5" /><label
+                            for="p1-5">5</label></div>
+                </div>
+
+                <!-- 2. Distressed (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">2.</span>Distressed</div>
+                    <div class="panas-cell"><input type="radio" name="panas_2" id="p2-1" value="1" /><label
+                            for="p2-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_2" id="p2-2" value="2" /><label
+                            for="p2-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_2" id="p2-3" value="3" /><label
+                            for="p2-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_2" id="p2-4" value="4" /><label
+                            for="p2-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_2" id="p2-5" value="5" /><label
+                            for="p2-5">5</label></div>
+                </div>
+
+                <!-- 3. Excited (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">3.</span>Excited</div>
+                    <div class="panas-cell"><input type="radio" name="panas_3" id="p3-1" value="1" /><label
+                            for="p3-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_3" id="p3-2" value="2" /><label
+                            for="p3-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_3" id="p3-3" value="3" /><label
+                            for="p3-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_3" id="p3-4" value="4" /><label
+                            for="p3-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_3" id="p3-5" value="5" /><label
+                            for="p3-5">5</label></div>
+                </div>
+
+                <!-- 4. Upset (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">4.</span>Upset</div>
+                    <div class="panas-cell"><input type="radio" name="panas_4" id="p4-1" value="1" /><label
+                            for="p4-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_4" id="p4-2" value="2" /><label
+                            for="p4-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_4" id="p4-3" value="3" /><label
+                            for="p4-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_4" id="p4-4" value="4" /><label
+                            for="p4-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_4" id="p4-5" value="5" /><label
+                            for="p4-5">5</label></div>
+                </div>
+
+                <!-- 5. Strong (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">5.</span>Strong</div>
+                    <div class="panas-cell"><input type="radio" name="panas_5" id="p5-1" value="1" /><label
+                            for="p5-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_5" id="p5-2" value="2" /><label
+                            for="p5-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_5" id="p5-3" value="3" /><label
+                            for="p5-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_5" id="p5-4" value="4" /><label
+                            for="p5-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_5" id="p5-5" value="5" /><label
+                            for="p5-5">5</label></div>
+                </div>
+
+                <!-- 6. Guilty (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">6.</span>Guilty</div>
+                    <div class="panas-cell"><input type="radio" name="panas_6" id="p6-1" value="1" /><label
+                            for="p6-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_6" id="p6-2" value="2" /><label
+                            for="p6-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_6" id="p6-3" value="3" /><label
+                            for="p6-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_6" id="p6-4" value="4" /><label
+                            for="p6-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_6" id="p6-5" value="5" /><label
+                            for="p6-5">5</label></div>
+                </div>
+
+                <!-- 7. Scared (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">7.</span>Scared</div>
+                    <div class="panas-cell"><input type="radio" name="panas_7" id="p7-1" value="1" /><label
+                            for="p7-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_7" id="p7-2" value="2" /><label
+                            for="p7-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_7" id="p7-3" value="3" /><label
+                            for="p7-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_7" id="p7-4" value="4" /><label
+                            for="p7-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_7" id="p7-5" value="5" /><label
+                            for="p7-5">5</label></div>
+                </div>
+
+                <!-- 8. Hostile (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">8.</span>Hostile</div>
+                    <div class="panas-cell"><input type="radio" name="panas_8" id="p8-1" value="1" /><label
+                            for="p8-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_8" id="p8-2" value="2" /><label
+                            for="p8-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_8" id="p8-3" value="3" /><label
+                            for="p8-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_8" id="p8-4" value="4" /><label
+                            for="p8-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_8" id="p8-5" value="5" /><label
+                            for="p8-5">5</label></div>
+                </div>
+
+                <!-- 9. Enthusiastic (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">9.</span>Enthusiastic</div>
+                    <div class="panas-cell"><input type="radio" name="panas_9" id="p9-1" value="1" /><label
+                            for="p9-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_9" id="p9-2" value="2" /><label
+                            for="p9-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_9" id="p9-3" value="3" /><label
+                            for="p9-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_9" id="p9-4" value="4" /><label
+                            for="p9-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_9" id="p9-5" value="5" /><label
+                            for="p9-5">5</label></div>
+                </div>
+
+                <!-- 10. Proud (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">10.</span>Proud</div>
+                    <div class="panas-cell"><input type="radio" name="panas_10" id="p10-1" value="1" /><label
+                            for="p10-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_10" id="p10-2" value="2" /><label
+                            for="p10-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_10" id="p10-3" value="3" /><label
+                            for="p10-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_10" id="p10-4" value="4" /><label
+                            for="p10-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_10" id="p10-5" value="5" /><label
+                            for="p10-5">5</label></div>
+                </div>
+
+                <!-- 11. Irritable (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">11.</span>Irritable</div>
+                    <div class="panas-cell"><input type="radio" name="panas_11" id="p11-1" value="1" /><label
+                            for="p11-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_11" id="p11-2" value="2" /><label
+                            for="p11-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_11" id="p11-3" value="3" /><label
+                            for="p11-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_11" id="p11-4" value="4" /><label
+                            for="p11-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_11" id="p11-5" value="5" /><label
+                            for="p11-5">5</label></div>
+                </div>
+
+                <!-- 12. Alert (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">12.</span>Alert</div>
+                    <div class="panas-cell"><input type="radio" name="panas_12" id="p12-1" value="1" /><label
+                            for="p12-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_12" id="p12-2" value="2" /><label
+                            for="p12-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_12" id="p12-3" value="3" /><label
+                            for="p12-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_12" id="p12-4" value="4" /><label
+                            for="p12-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_12" id="p12-5" value="5" /><label
+                            for="p12-5">5</label></div>
+                </div>
+
+                <!-- 13. Ashamed (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">13.</span>Ashamed</div>
+                    <div class="panas-cell"><input type="radio" name="panas_13" id="p13-1" value="1" /><label
+                            for="p13-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_13" id="p13-2" value="2" /><label
+                            for="p13-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_13" id="p13-3" value="3" /><label
+                            for="p13-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_13" id="p13-4" value="4" /><label
+                            for="p13-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_13" id="p13-5" value="5" /><label
+                            for="p13-5">5</label></div>
+                </div>
+
+                <!-- 14. Inspired (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">14.</span>Inspired</div>
+                    <div class="panas-cell"><input type="radio" name="panas_14" id="p14-1" value="1" /><label
+                            for="p14-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_14" id="p14-2" value="2" /><label
+                            for="p14-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_14" id="p14-3" value="3" /><label
+                            for="p14-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_14" id="p14-4" value="4" /><label
+                            for="p14-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_14" id="p14-5" value="5" /><label
+                            for="p14-5">5</label></div>
+                </div>
+
+                <!-- 15. Nervous (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">15.</span>Nervous</div>
+                    <div class="panas-cell"><input type="radio" name="panas_15" id="p15-1" value="1" /><label
+                            for="p15-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_15" id="p15-2" value="2" /><label
+                            for="p15-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_15" id="p15-3" value="3" /><label
+                            for="p15-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_15" id="p15-4" value="4" /><label
+                            for="p15-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_15" id="p15-5" value="5" /><label
+                            for="p15-5">5</label></div>
+                </div>
+
+                <!-- 16. Determined (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">16.</span>Determined</div>
+                    <div class="panas-cell"><input type="radio" name="panas_16" id="p16-1" value="1" /><label
+                            for="p16-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_16" id="p16-2" value="2" /><label
+                            for="p16-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_16" id="p16-3" value="3" /><label
+                            for="p16-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_16" id="p16-4" value="4" /><label
+                            for="p16-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_16" id="p16-5" value="5" /><label
+                            for="p16-5">5</label></div>
+                </div>
+
+                <!-- 17. Attentive (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">17.</span>Attentive</div>
+                    <div class="panas-cell"><input type="radio" name="panas_17" id="p17-1" value="1" /><label
+                            for="p17-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_17" id="p17-2" value="2" /><label
+                            for="p17-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_17" id="p17-3" value="3" /><label
+                            for="p17-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_17" id="p17-4" value="4" /><label
+                            for="p17-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_17" id="p17-5" value="5" /><label
+                            for="p17-5">5</label></div>
+                </div>
+
+                <!-- 18. Jittery (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">18.</span>Jittery</div>
+                    <div class="panas-cell"><input type="radio" name="panas_18" id="p18-1" value="1" /><label
+                            for="p18-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_18" id="p18-2" value="2" /><label
+                            for="p18-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_18" id="p18-3" value="3" /><label
+                            for="p18-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_18" id="p18-4" value="4" /><label
+                            for="p18-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_18" id="p18-5" value="5" /><label
+                            for="p18-5">5</label></div>
+                </div>
+
+                <!-- 19. Active (Positive) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">19.</span>Active</div>
+                    <div class="panas-cell"><input type="radio" name="panas_19" id="p19-1" value="1" /><label
+                            for="p19-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_19" id="p19-2" value="2" /><label
+                            for="p19-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_19" id="p19-3" value="3" /><label
+                            for="p19-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_19" id="p19-4" value="4" /><label
+                            for="p19-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_19" id="p19-5" value="5" /><label
+                            for="p19-5">5</label></div>
+                </div>
+
+                <!-- 20. Afraid (Negative) -->
+                <div class="panas-row">
+                    <div class="panas-term"><span class="panas-num">20.</span>Afraid</div>
+                    <div class="panas-cell"><input type="radio" name="panas_20" id="p20-1" value="1" /><label
+                            for="p20-1">1</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_20" id="p20-2" value="2" /><label
+                            for="p20-2">2</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_20" id="p20-3" value="3" /><label
+                            for="p20-3">3</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_20" id="p20-4" value="4" /><label
+                            for="p20-4">4</label></div>
+                    <div class="panas-cell"><input type="radio" name="panas_20" id="p20-5" value="5" /><label
+                            for="p20-5">5</label></div>
+                </div>
+
+            </div><!-- /panas-items -->
+
+            <div class="btn-row">
+                <button class="btn btn-ghost" onclick="goToPage(1)">← Back</button>
+                <button class="btn btn-primary" onclick="goToPage(3)">Next &nbsp;→</button>
+            </div>
+
+        </main>
+
+        <!-- ─────────────────────────────────────────────
+       PAGE 3 – DEMOGRAPHICS
+  ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page" id="page-3" role="main">
+
+            <div class="page-badge">👤 Step 2 of 5 &nbsp;·&nbsp; About You</div>
+            <h2 class="page-heading">A little about you</h2>
+            <p class="page-subheading">All fields are <strong>optional</strong>. Skip any you're not comfortable with.
+            </p>
+
+            <!-- Q1: Age -->
+            <div class="form-group">
+                <label class="form-label" for="age_group">Age <span class="optional">(optional)</span></label>
+                <select class="form-select" id="age_group" name="age_group">
+                    <option value="">Select age range</option>
+                    <option value="17-18">17–18</option>
+                    <option value="19-20">19–20</option>
+                    <option value="21-22">21–22</option>
+                    <option value="23-24">23–24</option>
+                    <option value="25+">25+</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+            </div>
+
+            <!-- Q2: Year of Study -->
+            <div class="form-group">
+                <label class="form-label" for="year_of_study">Year of Study <span
+                        class="optional">(optional)</span></label>
+                <select class="form-select" id="year_of_study" name="year_of_study">
+                    <option value="">Select year</option>
+                    <option value="1st">1st Year</option>
+                    <option value="2nd">2nd Year</option>
+                    <option value="3rd">3rd Year</option>
+                    <option value="4th">4th Year</option>
+                    <option value="5th">5th Year</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <!-- Q3: Program -->
+            <div class="form-group">
+                <label class="form-label" for="program">Program <span class="optional">(optional)</span></label>
+                <select class="form-select" id="program" name="program">
+                    <option value="">Select program</option>
+                    <option value="B.Tech">B.Tech</option>
+                    <option value="M.Tech">M.Tech</option>
+                    <option value="PhD">PhD</option>
+                    <option value="Dual Degree">Dual Degree</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <!-- Q4: Stream -->
+            <div class="form-group">
+                <label class="form-label" for="stream">Stream / Branch <span class="optional">(optional)</span></label>
+                <input type="text" class="form-input" id="stream" name="stream"
+                    placeholder="e.g. Computer Science, ECE, Design…" maxlength="80" />
+            </div>
+
+            <!-- Q5: Gender -->
+            <div class="form-group">
+                <label class="form-label">Gender <span class="optional">(optional)</span></label>
+                <div class="radio-group" role="radiogroup" aria-label="Gender">
+                    <label class="radio-option"><input type="radio" name="gender" value="Male" />
+                        <div class="custom-radio"></div><span class="option-label">Male</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="gender" value="Female" />
+                        <div class="custom-radio"></div><span class="option-label">Female</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="gender" value="Transgender Male" />
+                        <div class="custom-radio"></div><span class="option-label">Transgender Male</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="gender" value="Transgender Female" />
+                        <div class="custom-radio"></div><span class="option-label">Transgender Female</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="gender" value="Non-binary" />
+                        <div class="custom-radio"></div><span class="option-label">Non-binary</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="gender" value="Self-describe" />
+                        <div class="custom-radio"></div><span class="option-label">Self-describe</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="gender" value="Prefer not to say" />
+                        <div class="custom-radio"></div><span class="option-label">Prefer not to say</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Q6: Residence -->
+            <div class="form-group">
+                <label class="form-label">Residence <span class="optional">(optional)</span></label>
+                <div class="radio-group" role="radiogroup" aria-label="Residence">
+                    <label class="radio-option"><input type="radio" name="residence" value="Hostel" />
+                        <div class="custom-radio"></div><span class="option-label">Hostel (on-campus)</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="residence" value="Day Scholar" />
+                        <div class="custom-radio"></div><span class="option-label">Day Scholar</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="residence" value="Off-campus" />
+                        <div class="custom-radio"></div><span class="option-label">Off-campus (PG / flat)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-ghost" onclick="goToPage(2)">← Back</button>
+                <button class="btn btn-primary" onclick="goToPage(4)">Next &nbsp;→</button>
+            </div>
+        </main>
+
+        <!-- ─────────────────────────────────────────────
+             PAGE 4 – SOCIAL EXPERIENCE & BEHAVIOR
+        ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page" id="page-4" role="main">
+
+            <div class="page-badge">💬 Step 3 of 5 &nbsp;·&nbsp; Social Experience</div>
+            <h2 class="page-heading">Your campus social life</h2>
+            <p class="page-subheading">Rate each statement honestly. 1 = Strongly Disagree &nbsp;→&nbsp; 5 = Strongly
+                Agree.</p>
+
+            <!-- ── Section: Social Experience ── -->
+            <div class="section-label"><span class="section-label-text">Social Experience</span></div>
+
+            <!-- Q6: Social Satisfaction -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q6s">Q6. &nbsp;I am satisfied with my overall social experience on
+                    campus.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q6s">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="social_satisfaction" id="ss-1"
+                                value="1" /><label for="ss-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="social_satisfaction" id="ss-2"
+                                value="2" /><label for="ss-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="social_satisfaction" id="ss-3"
+                                value="3" /><label for="ss-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="social_satisfaction" id="ss-4"
+                                value="4" /><label for="ss-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="social_satisfaction" id="ss-5"
+                                value="5" /><label for="ss-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q7: Belonging -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q7">Q7. &nbsp;I feel like I belong at IIIT.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q7">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="belonging" id="bl-1" value="1" /><label
+                                for="bl-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="belonging" id="bl-2" value="2" /><label
+                                for="bl-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="belonging" id="bl-3" value="3" /><label
+                                for="bl-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="belonging" id="bl-4" value="4" /><label
+                                for="bl-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="belonging" id="bl-5" value="5" /><label
+                                for="bl-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q8: Close Friends -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q8">Q8. &nbsp;I have a close friend group on campus.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q8">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="close_friends" id="cf-1" value="1" /><label
+                                for="cf-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="close_friends" id="cf-2" value="2" /><label
+                                for="cf-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="close_friends" id="cf-3" value="3" /><label
+                                for="cf-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="close_friends" id="cf-4" value="4" /><label
+                                for="cf-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="close_friends" id="cf-5" value="5" /><label
+                                for="cf-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q9: Social Isolation -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q9">Q9. &nbsp;I often feel socially isolated on campus.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q9">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="social_isolation" id="si-1"
+                                value="1" /><label for="si-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="social_isolation" id="si-2"
+                                value="2" /><label for="si-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="social_isolation" id="si-3"
+                                value="3" /><label for="si-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="social_isolation" id="si-4"
+                                value="4" /><label for="si-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="social_isolation" id="si-5"
+                                value="5" /><label for="si-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Section: Social Behavior ── -->
+            <div class="section-label"><span class="section-label-text">Social Behavior</span></div>
+
+            <!-- Q10: Social Frequency -->
+            <div class="form-group">
+                <label class="form-label">Q10. &nbsp;How often do you interact socially outside academic work?</label>
+                <div class="radio-group" role="radiogroup">
+                    <label class="radio-option"><input type="radio" name="social_frequency" value="Never" />
+                        <div class="custom-radio"></div><span class="option-label">Never</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="social_frequency" value="Rarely" />
+                        <div class="custom-radio"></div><span class="option-label">Rarely</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="social_frequency" value="Sometimes" />
+                        <div class="custom-radio"></div><span class="option-label">Sometimes</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="social_frequency" value="Often" />
+                        <div class="custom-radio"></div><span class="option-label">Often</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="social_frequency" value="Very Often" />
+                        <div class="custom-radio"></div><span class="option-label">Very Often</span>
+                    </label>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q11: Friendship Ease -->
+            <div class="form-group">
+                <label class="form-label">Q11. &nbsp;How easy has it been for you to form friendships at IIIT?</label>
+                <div class="radio-group" role="radiogroup">
+                    <label class="radio-option"><input type="radio" name="friendship_ease" value="Very Difficult" />
+                        <div class="custom-radio"></div><span class="option-label">Very Difficult</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="friendship_ease" value="Difficult" />
+                        <div class="custom-radio"></div><span class="option-label">Difficult</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="friendship_ease" value="Neutral" />
+                        <div class="custom-radio"></div><span class="option-label">Neutral</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="friendship_ease" value="Easy" />
+                        <div class="custom-radio"></div><span class="option-label">Easy</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="friendship_ease" value="Very Easy" />
+                        <div class="custom-radio"></div><span class="option-label">Very Easy</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-ghost" onclick="goToPage(3)">← Back</button>
+                <button class="btn btn-primary" onclick="goToPage(5)">Next &nbsp;→</button>
+            </div>
+        </main>
+
+        <!-- ─────────────────────────────────────────────
+             PAGE 5 – INITIATION
+        ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page" id="page-5" role="main">
+
+            <div class="page-badge">🔥 Step 4 of 5 &nbsp;·&nbsp; Initiation</div>
+            <h2 class="page-heading">Starting conversations</h2>
+            <p class="page-subheading">Rate each statement. 1 = Strongly Disagree &nbsp;→&nbsp; 5 = Strongly Agree.</p>
+
+            <!-- ── Section: Initiation Anxiety ── -->
+            <div class="section-label"><span class="section-label-text">Initiation Anxiety</span></div>
+
+            <!-- Q12 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q12">Q12. &nbsp;I feel anxious when initiating conversations with new
+                    people on campus.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q12">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="initiation_anxiety" id="ia-1"
+                                value="1" /><label for="ia-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="initiation_anxiety" id="ia-2"
+                                value="2" /><label for="ia-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="initiation_anxiety" id="ia-3"
+                                value="3" /><label for="ia-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="initiation_anxiety" id="ia-4"
+                                value="4" /><label for="ia-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="initiation_anxiety" id="ia-5"
+                                value="5" /><label for="ia-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q13 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q13">Q13. &nbsp;I overthink what to say before starting a
+                    conversation.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q13">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="overthinking" id="ot-1" value="1" /><label
+                                for="ot-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="overthinking" id="ot-2" value="2" /><label
+                                for="ot-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="overthinking" id="ot-3" value="3" /><label
+                                for="ot-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="overthinking" id="ot-4" value="4" /><label
+                                for="ot-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="overthinking" id="ot-5" value="5" /><label
+                                for="ot-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q14 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q14">Q14. &nbsp;I avoid starting conversations even when I want
+                    to.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q14">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="avoidance" id="av-1" value="1" /><label
+                                for="av-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="avoidance" id="av-2" value="2" /><label
+                                for="av-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="avoidance" id="av-3" value="3" /><label
+                                for="av-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="avoidance" id="av-4" value="4" /><label
+                                for="av-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="avoidance" id="av-5" value="5" /><label
+                                for="av-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q15 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q15">Q15. &nbsp;I worry about being judged when approaching someone
+                    new.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q15">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="judgment_concern" id="jc-1"
+                                value="1" /><label for="jc-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="judgment_concern" id="jc-2"
+                                value="2" /><label for="jc-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="judgment_concern" id="jc-3"
+                                value="3" /><label for="jc-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="judgment_concern" id="jc-4"
+                                value="4" /><label for="jc-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="judgment_concern" id="jc-5"
+                                value="5" /><label for="jc-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Section: Initiation Behavior & Comfort ── -->
+            <div class="section-label"><span class="section-label-text">Initiation Behavior &amp; Comfort</span></div>
+
+            <!-- Q16 -->
+            <div class="form-group">
+                <label class="form-label">Q16. &nbsp;When meeting someone new, who usually starts the
+                    conversation?</label>
+                <div class="radio-group" role="radiogroup">
+                    <label class="radio-option"><input type="radio" name="conversation_initiator"
+                            value="I usually start" />
+                        <div class="custom-radio"></div><span class="option-label">I usually start</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="conversation_initiator"
+                            value="They usually start" />
+                        <div class="custom-radio"></div><span class="option-label">They usually start</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="conversation_initiator"
+                            value="It happens naturally" />
+                        <div class="custom-radio"></div><span class="option-label">It happens naturally</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="conversation_initiator"
+                            value="Depends on situation" />
+                        <div class="custom-radio"></div><span class="option-label">Depends on the situation</span>
+                    </label>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q17 -->
+            <div class="form-group">
+                <label class="form-label">Q17. &nbsp;How comfortable do you usually feel when meeting someone for the
+                    first time?</label>
+                <div class="radio-group" role="radiogroup">
+                    <label class="radio-option"><input type="radio" name="first_interaction_comfort"
+                            value="Very Uncomfortable" />
+                        <div class="custom-radio"></div><span class="option-label">Very Uncomfortable</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="first_interaction_comfort"
+                            value="Uncomfortable" />
+                        <div class="custom-radio"></div><span class="option-label">Uncomfortable</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="first_interaction_comfort" value="Neutral" />
+                        <div class="custom-radio"></div><span class="option-label">Neutral</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="first_interaction_comfort"
+                            value="Comfortable" />
+                        <div class="custom-radio"></div><span class="option-label">Comfortable</span>
+                    </label>
+                    <label class="radio-option"><input type="radio" name="first_interaction_comfort"
+                            value="Very Comfortable" />
+                        <div class="custom-radio"></div><span class="option-label">Very Comfortable</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-ghost" onclick="goToPage(4)">← Back</button>
+                <button class="btn btn-primary" onclick="goToPage(6)">Next &nbsp;→</button>
+            </div>
+        </main>
+
+        <!-- ─────────────────────────────────────────────
+             PAGE 6 – CONTEXT, OPPORTUNITY & OPEN INSIGHTS
+        ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page" id="page-6" role="main">
+
+            <div class="page-badge">🔍 Step 5 of 5 &nbsp;·&nbsp; Context &amp; Insights</div>
+            <h2 class="page-heading">Context &amp; what would help</h2>
+            <p class="page-subheading">Almost done. A few final questions about what shapes your social experience.</p>
+
+            <!-- ── Section: Context & Alternatives ── -->
+            <div class="section-label"><span class="section-label-text">Context &amp; Alternatives</span></div>
+
+            <!-- Q18: Friendship Source (multi-select) -->
+            <div class="form-group">
+                <label class="form-label">Q18. &nbsp;Most of my friendships formed through: <span
+                        class="optional">(select all that apply)</span></label>
+                <div class="checkbox-group" role="group">
+                    <label class="checkbox-option"><input type="checkbox" name="friendship_source" value="Classes"
+                            id="fs_classes" />
+                        <div class="custom-checkbox"></div><span class="option-label">Classes</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="friendship_source"
+                            value="Hostel/Living space" id="fs_hostel" />
+                        <div class="custom-checkbox"></div><span class="option-label">Hostel / Living space</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="friendship_source" value="Clubs/Events"
+                            id="fs_clubs" />
+                        <div class="custom-checkbox"></div><span class="option-label">Clubs / Events</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="friendship_source"
+                            value="Mutual friends" id="fs_mutual" />
+                        <div class="custom-checkbox"></div><span class="option-label">Mutual friends</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="friendship_source"
+                            value="Online platforms" id="fs_online" />
+                        <div class="custom-checkbox"></div><span class="option-label">Online platforms</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="friendship_source" value="Other"
+                            id="fs_other" />
+                        <div class="custom-checkbox"></div><span class="option-label">Other</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ── Section: Context & Barriers ── -->
+            <div class="section-label"><span class="section-label-text">Context &amp; Barriers</span></div>
+
+            <!-- Q19: Initiation Barriers (multi-select) -->
+            <div class="form-group">
+                <label class="form-label">Q19. &nbsp;What usually stops you from initiating conversations? <span
+                        class="optional">(select all that apply)</span></label>
+                <div class="checkbox-group" role="group">
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers"
+                            value="Fear of rejection" id="ib_fear_rejection" />
+                        <div class="custom-checkbox"></div><span class="option-label">Fear of rejection</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers"
+                            value="Not knowing what to say" id="ib_not_knowing" />
+                        <div class="custom-checkbox"></div><span class="option-label">Not knowing what to say</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers"
+                            value="Already formed friend groups" id="ib_formed_groups" />
+                        <div class="custom-checkbox"></div><span class="option-label">Existing friend groups (hard to
+                            enter)</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers"
+                            value="Lack of common topic" id="ib_no_topic" />
+                        <div class="custom-checkbox"></div><span class="option-label">Lack of a common topic to start
+                            with</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers" value="Low energy"
+                            id="ib_low_energy" />
+                        <div class="custom-checkbox"></div><span class="option-label">Low energy / social fatigue</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers"
+                            value="Nothing stops me" id="ib_nothing" />
+                        <div class="custom-checkbox"></div><span class="option-label">Nothing stops me</span>
+                    </label>
+                    <label class="checkbox-option"><input type="checkbox" name="initiation_barriers" value="Other"
+                            id="ib_other" />
+                        <div class="custom-checkbox"></div><span class="option-label">Other</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ── Section: Context & Desire ── -->
+            <div class="section-label"><span class="section-label-text">Context &amp; Desire</span></div>
+
+            <!-- Q20 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q20">Q20. &nbsp;I actively want to expand my social circle.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q20">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="social_expansion_desire" id="sed-1"
+                                value="1" /><label for="sed-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="social_expansion_desire" id="sed-2"
+                                value="2" /><label for="sed-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="social_expansion_desire" id="sed-3"
+                                value="3" /><label for="sed-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="social_expansion_desire" id="sed-4"
+                                value="4" /><label for="sed-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="social_expansion_desire" id="sed-5"
+                                value="5" /><label for="sed-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Section: Opportunity Testing ── -->
+            <div class="section-label"><span class="section-label-text">Opportunity Testing</span></div>
+
+            <!-- Q21 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q21">Q21. &nbsp;I feel more comfortable initiating conversations
+                    online than in person.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q21">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="online_comfort" id="oc-1"
+                                value="1" /><label for="oc-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="online_comfort" id="oc-2"
+                                value="2" /><label for="oc-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="online_comfort" id="oc-3"
+                                value="3" /><label for="oc-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="online_comfort" id="oc-4"
+                                value="4" /><label for="oc-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="online_comfort" id="oc-5"
+                                value="5" /><label for="oc-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q22 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q22">Q22. &nbsp;I prefer social situations that feel low-pressure and
+                    structured.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q22">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="structured_preference" id="sp-1"
+                                value="1" /><label for="sp-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="structured_preference" id="sp-2"
+                                value="2" /><label for="sp-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="structured_preference" id="sp-3"
+                                value="3" /><label for="sp-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="structured_preference" id="sp-4"
+                                value="4" /><label for="sp-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="structured_preference" id="sp-5"
+                                value="5" /><label for="sp-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q23 -->
+            <div class="form-group">
+                <label class="form-label" id="lbl-q23">Q23. &nbsp;Having more spontaneous interactions would improve my
+                    campus experience.</label>
+                <div class="likert-wrapper" role="radiogroup" aria-labelledby="lbl-q23">
+                    <div class="likert-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+                    <div class="likert-options">
+                        <div class="likert-option"><input type="radio" name="spontaneous_value" id="sv-1"
+                                value="1" /><label for="sv-1">1</label></div>
+                        <div class="likert-option"><input type="radio" name="spontaneous_value" id="sv-2"
+                                value="2" /><label for="sv-2">2</label></div>
+                        <div class="likert-option"><input type="radio" name="spontaneous_value" id="sv-3"
+                                value="3" /><label for="sv-3">3</label></div>
+                        <div class="likert-option"><input type="radio" name="spontaneous_value" id="sv-4"
+                                value="4" /><label for="sv-4">4</label></div>
+                        <div class="likert-option"><input type="radio" name="spontaneous_value" id="sv-5"
+                                value="5" /><label for="sv-5">5</label></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Section: Open Insights ── -->
+            <div class="section-label"><span class="section-label-text">Open Insights</span></div>
+
+            <!-- Q24 -->
+            <div class="form-group">
+                <label class="form-label" for="social_friction_open">
+                    Q24. &nbsp;What makes social interactions on campus easier or harder for you? <span
+                        class="optional">(optional)</span>
+                </label>
+                <textarea class="form-textarea" id="social_friction_open" name="social_friction_open" maxlength="400"
+                    rows="3" placeholder="Share anything that comes to mind…"></textarea>
+                <div class="char-counter" id="q24-counter">0 / 400</div>
+            </div>
+            <hr class="section-divider" />
+
+            <!-- Q25 -->
+            <div class="form-group">
+                <label class="form-label" for="safety_factors">
+                    Q25. &nbsp;What would make a new way of meeting students feel safe and comfortable for you? <span
+                        class="optional">(optional)</span>
+                </label>
+                <textarea class="form-textarea" id="safety_factors" name="safety_factors" maxlength="400" rows="3"
+                    placeholder="e.g. anonymous first contact, shared interests, structured icebreakers…"></textarea>
+                <div class="char-counter" id="q25-counter">0 / 400</div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-ghost" onclick="goToPage(5)">← Back</button>
+                <button class="btn btn-primary" id="submit-btn" onclick="openSubmitModal()">Submit Survey</button>
+            </div>
+        </main>
+
+        <!-- ─────────────────────────────────────────────
+             PAGE 7 – COMPLETION
+        ────────────────────────────────────────────── -->
+        <main class="survey-card survey-page" id="page-7" role="main">
+            <div class="completion-center">
+                <div class="completion-icon" aria-hidden="true">✓</div>
+                <h2 class="completion-heading">Thank you!</h2>
+                <p class="completion-msg">
+                    Your response has been recorded. Your input will directly shape how we understand and improve campus
+                    social life at IIIT.
+                </p>
+                <p class="completion-note">
+                    This survey is anonymous. No personal data was collected.<br />
+                    You may close this tab at any time.
+                </p>
+            </div>
+        </main>
+
+    </div><!-- /survey-shell -->
+
+    <!-- Cloud Storage (Google Sheets) -->
+    <script src="google-sheets-client.js"></script>
+
+    <script src="scoring.js"></script>
+
+    <script src="engine.js"></script>
+    <script src="survey.js"></script>
+</body>
+
+</html>
