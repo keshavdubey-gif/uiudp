@@ -335,6 +335,7 @@ function initModal() {
    SUBMISSION
 ════════════════════════════════════════════════════ */
 async function submitSurvey() {
+    responses.timestamp = new Date().toISOString();
     // ── Final DOM Sweep (Fail-safe for missed events) ───────────
     // Captures Selects and Text fields
     const directFields = ['age_group', 'year_of_study', 'program', 'stream', 'social_friction_open', 'safety_factors'];
