@@ -375,10 +375,10 @@ function submitSurvey() {
     all.push(record);
     localStorage.setItem(allKey, JSON.stringify(all));
 
-    // ── Save to Google Sheets (non-blocking) ────────────────────
-    if (typeof saveToGoogleSheets === 'function') {
-        saveToGoogleSheets(record).catch(err =>
-            console.warn('[Google Sheets] Background save failed:', err)
+    // ── Save to Supabase (non-blocking) ─────────────────────────
+    if (typeof saveToSupabase === 'function') {
+        saveToSupabase(record).catch(err =>
+            console.warn('[Supabase] Background save failed:', err)
         );
     }
 

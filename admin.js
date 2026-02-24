@@ -110,16 +110,16 @@ function baseBarOpts(indexAxis = 'x') {
 async function initAdmin() {
     let data = null;
 
-    // Try Google Sheets first
-    if (typeof fetchFromGoogleSheets === 'function') {
+    // Try Supabase first
+    if (typeof fetchFromSupabase === 'function') {
         try {
-            const rows = await fetchFromGoogleSheets();
+            const rows = await fetchFromSupabase();
             if (rows && rows.length > 0) {
                 data = rows.map(normaliseRow);
-                console.log(`[Admin] Using ${data.length} rows from Google Sheets`);
+                console.log(`[Admin] Using ${data.length} rows from Supabase`);
             }
         } catch (e) {
-            console.warn('[Admin] Google Sheets fetch failed, using localStorage:', e);
+            console.warn('[Admin] Supabase fetch failed, using localStorage:', e);
         }
     }
 
