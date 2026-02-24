@@ -47,26 +47,30 @@ function initSupabase() {
  ═══════════════════════════════════════════════════════ */
 
 /**
- * Normalises and saves a record. Non-blocking.
+ * Normalises and saves a record.
  */
 async function saveToSupabase(record) {
     const sb = getSupabase();
     if (!sb) return;
 
     const dbRecord = sanitiseForDB(record);
+    console.log('[Supabase] Preparing to save record:', dbRecord);
 
     try {
-        const { error } = await sb
+        const { data, error } = await sb
             .from('survey_responses')
-            .insert([dbRecord]);
+            .insert([dbRecord])
+            .select();
 
         if (error) {
             console.error('[Supabase] Insert error:', error);
             throw error;
         }
-        console.log('[Supabase] Success: Saved response to cloud');
+        console.log('[Supabase] Success: Saved response to cloud', data);
+        return data;
     } catch (err) {
         console.error('[Supabase] Save failed:', err);
+        throw err;
     }
 }
 

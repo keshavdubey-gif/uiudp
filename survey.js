@@ -334,7 +334,7 @@ function initModal() {
 /* ══════════════════════════════════════════════════
    SUBMISSION
 ════════════════════════════════════════════════════ */
-function submitSurvey() {
+async function submitSurvey() {
     responses.timestamp = new Date().toISOString();
     computePanasScores();
 
@@ -375,20 +375,25 @@ function submitSurvey() {
     all.push(record);
     localStorage.setItem(allKey, JSON.stringify(all));
 
-    // ── Save to Supabase (non-blocking) ─────────────────────────
-    if (typeof saveToSupabase === 'function') {
-        saveToSupabase(record).catch(err =>
-            console.warn('[Supabase] Background save failed:', err)
-        );
+    // ── Save to Supabase (blocking with await) ───────────────────
+    const btn = document.getElementById('modal-confirm');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
     }
 
+    if (typeof saveToSupabase === 'function') {
+        try {
+            await saveToSupabase(record);
+        } catch (err) {
+            console.warn('[Supabase] Save failed, data persistent in localStorage:', err);
+            // Optionally tell user it failed but we'll try again? 
+            // For now, continue to result page as it's in localStorage anyway.
+        }
+    }
 
     // Clear draft
     localStorage.removeItem(DRAFT_KEY);
-
-    // Close modal
-    const modal = document.getElementById('submit-modal');
-    if (modal) modal.classList.remove('open');
 
     // Redirect to identity result page
     window.location.href = 'result.html';

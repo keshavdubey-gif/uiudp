@@ -52,6 +52,7 @@ function normaliseRow(r) {
     return {
         ...r,
         timestamp: r.created_at || r.timestamp,
+        // Map trait columns if they are snake_case in DB
         trait_ER: r.trait_er ?? r.trait_ER,
         trait_CR: r.trait_cr ?? r.trait_CR,
         trait_SI: r.trait_si ?? r.trait_SI,
@@ -59,6 +60,14 @@ function normaliseRow(r) {
         trait_GP: r.trait_gp ?? r.trait_GP,
         trait_SE: r.trait_se ?? r.trait_SE,
         trait_ED: r.trait_ed ?? r.trait_ED,
+        // Map legacy/mismatched keys to the schema
+        belonging_score: r.belonging,
+        initiation_ease_score: r.initiation_anxiety,
+        digital_openness: r.social_expansion_desire,
+        comfort_approaching: r.first_interaction_comfort,
+        approached_recently: r.social_frequency,
+        wanted_talk_no_action: r.overthinking,
+        safe_features_text: r.safety_factors
     };
 }
 
@@ -215,9 +224,9 @@ function renderLikertChart(data) {
    CHART 2 – BELONGING DONUT
 ══════════════════════════════════════ */
 function renderBelongingDonut(data) {
-    const connected = data.filter(r => parseInt(r.belonging_score) >= 3).length;
-    const disconnected = data.filter(r => parseInt(r.belonging_score) <= 2).length;
-    const unanswered = data.filter(r => !r.belonging_score).length;
+    const connected = data.filter(r => parseInt(r.belonging) >= 3).length;
+    const disconnected = data.filter(r => parseInt(r.belonging) <= 2 && r.belonging !== null).length;
+    const unanswered = data.filter(r => r.belonging === null || r.belonging === undefined).length;
 
     const ctx = document.getElementById('chart-belonging-donut')?.getContext('2d');
     if (!ctx) return;
@@ -296,8 +305,8 @@ function renderYearBelongingChart(data) {
 
     data.forEach(r => {
         const y = r.year_of_study;
-        const b = parseFloat(r.belonging_score);
-        if (!y || isNaN(b) || b === 0) return;
+        const b = parseFloat(r.belonging);
+        if (!y || isNaN(b)) return;
         if (!grouped[y]) grouped[y] = [];
         grouped[y].push(b);
     });
