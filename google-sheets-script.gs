@@ -14,7 +14,16 @@
 function doPost(e) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    const data = JSON.parse(e.postData.contents);
+    let contents = e.postData.contents;
+    let data;
+
+    try {
+      data = JSON.parse(contents);
+    } catch (err) {
+      // Fallback if no-cors sends it in a weird way
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Invalid JSON format" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
     // Initialise header if empty
     if (sheet.getLastRow() === 0) {
@@ -22,9 +31,15 @@ function doPost(e) {
       sheet.appendRow(headers);
     }
 
-    // Append data
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const row = headers.map(h => data[h] ?? "");
+    // Get current headers
+    const headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0];
+    
+    // Map data to headers
+    const row = headers.map(h => {
+      let val = data[h];
+      return (val !== undefined && val !== null) ? val : "";
+    });
+    
     sheet.appendRow(row);
 
     return ContentService.createTextOutput(JSON.stringify({ success: true }))
@@ -34,6 +49,7 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
+
 
 function doGet(e) {
   try {

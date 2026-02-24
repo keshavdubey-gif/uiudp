@@ -6,7 +6,7 @@
 'use strict';
 
 // ⚠️ PASTE YOUR APPS SCRIPT WEB APP URL HERE
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjebyKj3RqRjHpGXScnQ_3oHltFZT4Z95hQidRuVQsvTCb1jN1NEn9IhjRt1Zv6h4/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0oPbkrV4Kk7lCd0SywQxhkoKwm4Nzd2bG7XZ3Lc2S5JhvLCDPd-fBUPwXJqYnFWRd/exec';
 
 /**
  * Save survey response to Google Sheets.
