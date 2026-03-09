@@ -5,7 +5,7 @@
 
 'use strict';
 
-const ADMIN_CREDS = { user: 'admin', pass: 'survey2024' };
+const ADMIN_CREDS = { user: 'admin', pass: 'aasritha2026' };
 let analysisData = null;
 let instructions = null;
 let engine = null;
