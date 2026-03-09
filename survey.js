@@ -414,11 +414,12 @@ async function submitSurvey() {
 
     if (typeof saveToSupabase === 'function') {
         try {
-            await saveToSupabase(record);
+            const data = await saveToSupabase(record);
+            if (data && data[0] && data[0].id) {
+                localStorage.setItem('last_response_id', data[0].id);
+            }
         } catch (err) {
             console.warn('[Supabase] Save failed, data persistent in localStorage:', err);
-            // Optionally tell user it failed but we'll try again? 
-            // For now, continue to result page as it's in localStorage anyway.
         }
     }
 

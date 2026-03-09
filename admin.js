@@ -1,15 +1,17 @@
 /**
  * Campus Social Experience Survey
- * admin.js — Auth, analytics, CSV/Excel export
+ * admin.js — Research Analysis Layer Implementation
  */
 
 'use strict';
 
-/* ═══════════════════════════════════════
-   AUTH
-══════════════════════════════════════ */
 const ADMIN_CREDS = { user: 'admin', pass: 'survey2024' };
+let analysisData = null;
+let instructions = null;
+let engine = null;
+let currentPage = 'dashboard_01';
 
+/* ── Auth ── */
 function checkAuth() {
     const u = document.getElementById('auth-user').value.trim();
     const p = document.getElementById('auth-pass').value;
@@ -24,454 +26,701 @@ function checkAuth() {
     }
 }
 
-// Also allow Enter key in password field
+/* ── Init ── */
+async function initAdmin() {
+    const container = document.getElementById('page-container');
+    container.innerHTML = `
+        <div style="text-align:center; padding: 40px; color:rgba(0,0,0,0.4);">
+            <div class="loading-spinner" style="margin-bottom:16px;">⏳</div>
+            <p>Initialising Research Engine...</p>
+        </div>
+    `;
+
+    // 1. Load Instructions (Prefer pre-loaded global, then fetch)
+    if (window.RESEARCH_INSTRUCTIONS) {
+        instructions = window.RESEARCH_INSTRUCTIONS;
+    } else {
+        try {
+            const resp = await fetch('instructions.json');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            instructions = await resp.json();
+        } catch (e) {
+            container.innerHTML = `
+                <div class="unsupported-notice" style="border-color:#FF3B30; color:#FF3B30;">
+                    <p><strong>Fatal Error:</strong> Failed to load research configuration.</p>
+                    <p style="font-size:12px; margin-top:8px;">Reason: ${e.message}. Ensure <code>instructions.js</code> is in the current directory.</p>
+                </div>
+            `;
+            console.error('Failed to load instructions', e);
+            return;
+        }
+    }
+
+    // 2. Load Data from Supabase
+    container.innerHTML += `<p style="font-size:13px; color:rgba(0,0,0,0.4);">Syncing with Supabase...</p>`;
+
+    let data = null;
+    if (typeof fetchFromSupabase === 'function') {
+        try {
+            data = await fetchFromSupabase();
+            console.log('[Admin] Fetched from Supabase:', data?.length);
+        } catch (e) {
+            console.warn('Supabase fetch failed', e);
+        }
+    }
+
+    // Fallback to localStorage if Supabase is offline/empty
+    if (!data || data.length === 0) {
+        console.log('[Admin] Falling back to local storage');
+        const raw = localStorage.getItem('survey_responses');
+        data = raw ? JSON.parse(raw) : [];
+    }
+
+    analysisData = data;
+
+    // 3. Initialize Engine
+    engine = new AnalysisEngine(data, instructions);
+    const results = engine.calculateAll();
+    window.analysisResults = results; // For debugging
+
+    // 4. Set up Navigation
+    setupNavigation();
+
+    // 5. Render Initial Page
+    if (analysisData.length === 0) {
+        showEmptyState();
+    } else {
+        renderPage(currentPage);
+    }
+}
+
+function showEmptyState() {
+    const container = document.getElementById('page-container');
+    container.innerHTML = `
+        <div class="unsupported-notice" style="margin-top: 40px; border-style: solid;">
+            <h2 style="margin-bottom:12px;">No Survey Data Yet</h2>
+            <p style="margin-bottom:20px;">The analysis engine is ready, but haven't received any valid responses yet.</p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button class="btn btn-primary" onclick="seedDemoData()">Seed 25 Demo Responses</button>
+                <a href="index.html" class="btn btn-ghost" target="_blank">Open Survey ↗</a>
+            </div>
+            <p style="font-size:11px; margin-top:20px; color:rgba(0,0,0,0.4);">
+                Note: If you are seeing this and have submitted data, ensure you are running a local server (like Live Server) 
+                so the browser can load <code>instructions.json</code>.
+            </p>
+        </div>
+    `;
+}
+
+function seedDemoData() {
+    const years = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Postgrad'];
+    const genders = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+    const programs = ['B.Tech', 'B.A.', 'B.Sc.', 'B.Des'];
+    const locations = ['On-campus Hostel', 'Off-campus PG/Flat', 'Living with Family'];
+
+    const mockData = [];
+    for (let i = 0; i < 25; i++) {
+        const row = {
+            id: 'mock_' + Math.random().toString(36).substr(2, 9),
+            created_at: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
+            year_of_study: years[Math.floor(Math.random() * years.length)],
+            gender: genders[Math.floor(Math.random() * genders.length)],
+            program: programs[Math.floor(Math.random() * programs.length)],
+            residence: locations[Math.floor(Math.random() * locations.length)],
+
+            // Initiation metrics
+            initiation_anxiety: 2 + Math.random() * 3,
+            overthinking: 3 + Math.random() * 2,
+            avoidance: 2 + Math.random() * 2,
+            judgment_concern: 3 + Math.random() * 2,
+
+            // Belonging metrics
+            belonging: 1 + Math.random() * 4,
+            disconnection: 2 + Math.random() * 3,
+            loneliness: 2 + Math.random() * 3,
+
+            // Preferences
+            social_expansion_desire: 3 + Math.random() * 2,
+            spontaneous_value: 1 + Math.random() * 4,
+            structured_preference: 1 + Math.random() * 4,
+            online_comfort: 3 + Math.random() * 2,
+
+            // Open Text
+            social_friction_open: i % 2 === 0 ? "I find it hard to join small groups already talking." : "The campus feels too formal, need more common interest clubs.",
+            safety_factors: i % 3 === 0 ? "Shared interests and structured activities make me feel safe." : "No judgment and friendly faces.",
+
+            suspect_submission: false
+        };
+        mockData.push(row);
+    }
+
+    localStorage.setItem('survey_responses', JSON.stringify(mockData));
+    alert('25 demo responses seeded! Reloading dashboard...');
+    window.location.reload();
+}
+
+window.seedDemoData = seedDemoData;
+
+function setupNavigation() {
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pageId = btn.getAttribute('data-page');
+            navBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderPage(pageId);
+        });
+    });
+}
+
+function renderPage(pageId) {
+    currentPage = pageId;
+    const container = document.getElementById('page-container');
+    container.innerHTML = '';
+
+    if (pageId === 'response_table') {
+        renderRawDataTable(container);
+        return;
+    }
+
+    if (pageId === 'research_answers') {
+        renderResearchAnswers(container);
+        return;
+    }
+
+    if (pageId === 'unsupported_list') {
+        renderUnsupportedList(container);
+        return;
+    }
+
+    const pageSpec = instructions.dashboard_spec.pages.find(p => p.page_id === pageId);
+    if (!pageSpec) return;
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'page-header';
+    header.innerHTML = `<h2>${pageSpec.title}</h2>`;
+    container.appendChild(header);
+
+    // Filter notice (if suspect excluded)
+    const filterNotice = document.createElement('p');
+    filterNotice.style.fontSize = '12px';
+    filterNotice.style.color = 'rgba(60,60,67,0.40)';
+    filterNotice.style.marginBottom = '16px';
+    filterNotice.innerHTML = `Showing analysis for <strong>${engine.data.length}</strong> valid responses (excluding ${engine.rawData.length - engine.data.length} suspect).`;
+    container.appendChild(filterNotice);
+
+    // Group widgets by type for better layout (e.g., Row of KPIs)
+    let kpiRow = null;
+
+    pageSpec.widgets.forEach(widgetId => {
+        // Find if it's a global metric or a research question
+        const globalMetric = instructions.global_metrics.find(m => m.metric_id === widgetId);
+        const rq = instructions.research_questions.find(q => q.rq_id === widgetId);
+
+        if (globalMetric) {
+            if (!kpiRow) {
+                kpiRow = document.createElement('div');
+                kpiRow.className = 'kpi-row';
+                container.appendChild(kpiRow);
+            }
+            const val = window.analysisResults.global_metrics[widgetId];
+            const formatted = typeof val === 'number' ?
+                (widgetId.includes('avg') || widgetId.includes('index') ? val.toFixed(2) : Math.round(val)) : val;
+
+            const card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = `<div class="stat-num">${formatted}</div><div class="stat-label">${globalMetric.label}</div>`;
+            kpiRow.appendChild(card);
+        } else if (rq) {
+            kpiRow = null; // Break KPI row if any
+            renderRQWidget(container, rq);
+        }
+    });
+}
+
+function renderRQWidget(container, rq) {
+    const card = document.createElement('div');
+    card.className = 'chart-card full';
+
+    // Status Badge
+    const statusClass = rq.support_level === 'fully_supported' ? 'status-fully' :
+        (rq.support_level === 'partially_supported' ? 'status-partially' : 'status-not');
+    const statusLabel = rq.support_level.replace(/_/g, ' ');
+
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3>${rq.rq_id}: ${rq.question}</h3>
+            <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+    `;
+
+    if (rq.support_level === 'not_supported_with_current_survey') {
+        const notice = document.createElement('div');
+        notice.className = 'unsupported-notice';
+        notice.innerHTML = `<p><strong>Not Supported</strong><br>${rq.limitations?.[0] || 'This question cannot be answered with the current survey data.'}</p>`;
+        card.appendChild(notice);
+        container.appendChild(card);
+        return;
+    }
+
+    const results = window.analysisResults.research_questions[rq.rq_id];
+    const widgetType = rq.ui.primary_widget;
+
+    // Render based on widget type
+    const div = document.createElement('div');
+    div.id = `widget-${rq.rq_id}`;
+    card.appendChild(div);
+    container.appendChild(card);
+
+    // Call specific renderers
+    switch (widgetType) {
+        case 'kpi_triplet': renderKPITriplet(div, rq, results); break;
+        case 'horizontal_bar_chart': renderHorizontalBar(div, rq, results); break;
+        case 'bar_chart':
+        case 'line_or_bar_chart':
+        case 'grouped_bar_chart': renderBarChart(div, rq, results); break;
+        case 'radar_chart': renderRadarChart(div, rq, results); break;
+        case 'segment_pie_chart': renderPieChart(div, rq, results); break;
+        case 'summary_score_card': renderSummaryScore(div, rq, results); break;
+        case 'segmented_bar_chart': renderBarChart(div, rq, results); break;
+        case 'theme_cluster_panel':
+        case 'theme_chip_list':
+        case 'theme_insight_panel':
+        case 'score_plus_theme_panel':
+        case 'risk_theme_panel':
+        case 'design_opportunity_panel': renderThemePanel(div, rq, results); break;
+        case 'scatter_plot': renderScatterPlot(div, rq, results); break;
+        case 'two_metric_compare_card': renderCompareCard(div, rq, results); break;
+        case 'single_metric_card': renderSingleMetricCard(div, rq, results); break;
+        default:
+            div.innerHTML = `<p style="font-size:12px; color:#999;">Renderer for ${widgetType} not implemented yet.</p>`;
+    }
+
+    // Add limitations if partial
+    if (rq.support_level === 'partially_supported' && rq.limitations) {
+        const lim = document.createElement('p');
+        lim.style.fontSize = '11px';
+        lim.style.color = '#FF9500';
+        lim.style.marginTop = '12px';
+        lim.style.borderTop = '1px dashed #FF950044';
+        lim.style.paddingTop = '8px';
+        lim.innerHTML = `<strong>Limitation:</strong> ${rq.limitations.join(' ')}`;
+        card.appendChild(lim);
+    }
+}
+
+/* ── Widget Renderers ── */
+
+function renderKPITriplet(target, rq, results) {
+    const row = document.createElement('div');
+    row.className = 'kpi-row';
+    target.appendChild(row);
+
+    Object.entries(results.calculations).forEach(([id, val], i) => {
+        const label = rq.ui.labels?.[i] || id;
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.style.boxShadow = 'none';
+        card.style.border = '1px solid #f0f0f0';
+        card.innerHTML = `<div class="stat-num">${typeof val === 'number' ? val.toFixed(2) : val}</div><div class="stat-label">${label}</div>`;
+        row.appendChild(card);
+    });
+}
+
+function renderHorizontalBar(target, rq, results) {
+    const canvas = document.createElement('canvas');
+    target.appendChild(canvas);
+
+    const calc = Object.values(results.calculations)[0];
+    const labels = Object.keys(calc);
+    const values = Object.values(calc);
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels.map(l => l.replace(/ib_|fs_/g, '').replace(/_/g, ' ')),
+            datasets: [{
+                data: values,
+                backgroundColor: '#007AFF33',
+                borderColor: '#007AFF',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: { x: { beginAtZero: true } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function renderBarChart(target, rq, results) {
+    const canvas = document.createElement('canvas');
+    target.appendChild(canvas);
+
+    const calc = Object.values(results.calculations)[0];
+    let labels = [], data = [];
+
+    if (typeof calc === 'object' && !Array.isArray(calc)) {
+        labels = Object.keys(calc);
+        data = Object.values(calc);
+    }
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                data: data,
+                backgroundColor: '#007AFF33',
+                borderColor: '#007AFF',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 5 } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function renderRadarChart(target, rq, results) {
+    const canvas = document.createElement('canvas');
+    target.appendChild(canvas);
+
+    const labels = [];
+    const data = [];
+    Object.entries(results.calculations).forEach(([id, val]) => {
+        if (typeof val === 'number') {
+            const calcSpec = rq.calculations.find(c => c.calc_id === id);
+            labels.push(calcSpec ? calcSpec.label : id);
+            data.push(val);
+        }
+    });
+
+    new Chart(canvas, {
+        type: 'radar',
+        data: {
+            labels: labels.map(l => l.replace(/ mean/g, '')),
+            datasets: [{
+                label: 'Current Data',
+                data: data,
+                backgroundColor: '#007AFF33',
+                borderColor: '#007AFF',
+                pointBackgroundColor: '#007AFF',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    min: 0,
+                    max: 5,
+                    ticks: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function renderPieChart(target, rq, results) {
+    const canvas = document.createElement('canvas');
+    target.appendChild(canvas);
+
+    const calc = Object.values(results.calculations)[0];
+    const labels = Object.keys(calc);
+    const data = Object.values(calc).map(v => v.count);
+
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => l.replace(/_/g, ' ')),
+            datasets: [{
+                data,
+                backgroundColor: ['#007AFF33', '#34C75933', '#FF950033', '#AF52DE33'],
+                borderColor: ['#007AFF', '#34C759', '#FF9500', '#AF52DE'],
+                borderWidth: 2
+            }]
+        }
+    });
+}
+
+function renderSummaryScore(target, rq, results) {
+    const calc = Object.values(results.calculations)[0];
+    const div = document.createElement('div');
+    div.className = 'stat-card';
+    div.style.width = 'fit-content';
+    div.style.margin = '10px auto';
+    div.style.boxShadow = 'none';
+    div.style.border = '1px solid #eee';
+    div.innerHTML = `<div class="stat-num" style="font-size:48px;">${typeof calc === 'number' ? calc.toFixed(2) : (calc.mean ? calc.mean.toFixed(2) : '—')}</div><div class="stat-label">Index Score</div>`;
+    target.appendChild(div);
+}
+
+function renderThemePanel(target, rq, results, title = 'Extracted Themes') {
+    const calc = Object.values(results.calculations).find(c => Array.isArray(c));
+    if (!calc || calc.length === 0) {
+        target.innerHTML = `<p style="font-size:13px; color:#999; padding: 20px; text-align:center;">No significant themes found in current open-text responses.</p>`;
+        return;
+    }
+
+    const panel = document.createElement('div');
+    panel.className = 'theme-panel';
+    panel.style.background = '#F9F9FB';
+    panel.style.margin = '10px 0';
+    panel.innerHTML = `<h4 style="font-size:12px; margin-bottom:12px; color:rgba(60,60,67,0.4)">${title}</h4>`;
+
+    calc.forEach(item => {
+        const chip = document.createElement('span');
+        chip.className = 'theme-chip';
+        chip.innerHTML = `${item.theme} <span style="opacity:0.5; margin-left:4px;">${item.frequency}</span>`;
+        panel.appendChild(chip);
+    });
+
+    target.appendChild(panel);
+}
+
+function renderScatterPlot(target, rq, results) {
+    const coeff = Object.values(results.calculations)[0];
+    target.innerHTML = `
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px; align-items:center; padding: 10px;">
+             <div class="stat-card" style="box-shadow:none; border:1px solid #eee;">
+                <div class="stat-num">${coeff ? coeff.toFixed(3) : '0.000'}</div>
+                <div class="stat-label">Pearson Correlation (r)</div>
+            </div>
+            <div style="font-size:13px; color:#666; line-height:1.5;">
+                <strong>Interpretation:</strong><br>
+                ${Math.abs(coeff) > 0.5 ? 'Strong' : (Math.abs(coeff) > 0.3 ? 'Moderate' : 'Weak')} 
+                ${coeff >= 0 ? 'positive' : 'negative'} relationship detected.
+            </div>
+        </div>
+    `;
+}
+
+function renderCompareCard(target, rq, results) {
+    const calc = Object.values(results.calculations)[0];
+    target.innerHTML = `
+        <div style="display:flex; justify-content:center; gap:24px; padding:20px;">
+            <div class="stat-card" style="box-shadow:none; border:1px solid #eee;">
+                <div class="stat-num">${calc.mean.toFixed(2)}</div>
+                <div class="stat-label">Difference Score</div>
+            </div>
+            <div class="stat-card" style="box-shadow:none; border:1px solid #eee;">
+                <div class="stat-num" style="font-size:24px; text-transform:capitalize;">${calc.leaning.replace(/_/g, ' ')}</div>
+                <div class="stat-label">Tendency</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderSingleMetricCard(target, rq, results) {
+    const calc = Object.values(results.calculations)[0];
+    const val = typeof calc === 'number' ? calc.toFixed(2) : (calc.mean ? calc.mean.toFixed(2) : '—');
+    target.innerHTML = `
+        <div class="stat-card" style="width:fit-content; margin: 10px auto; box-shadow:none; border:1px solid #eee;">
+            <div class="stat-num">${val}</div>
+            <div class="stat-label">Average Score</div>
+        </div>
+    `;
+}
+
+/* ── Unsupported RQs List ── */
+function renderUnsupportedList(container) {
+    container.innerHTML = `
+        <div class="page-header">
+            <h2>Unsupported Research Questions</h2>
+            <p>The following questions were identified in the research plan but are not directly supported by current survey data. These are displayed to ensure rigorous reporting and avoid false inferences.</p>
+        </div>
+        <div id="unsupported-container"></div>
+    `;
+
+    const list = instructions.research_questions.filter(rq => rq.support_level === 'not_supported_with_current_survey');
+    const target = document.getElementById('unsupported-container');
+
+    list.forEach(rq => {
+        const card = document.createElement('div');
+        card.className = 'chart-card full';
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                <div style="flex:1;">
+                    <h3 style="margin-bottom:4px;">${rq.rq_id}: ${rq.question}</h3>
+                    <p style="font-size:13px; color:rgba(60,60,67,0.5);">Target Objective: ${rq.objective_id}</p>
+                </div>
+                <span class="status-badge status-not">Unsupported</span>
+            </div>
+            <div class="unsupported-notice">
+                <p><strong>Rationale:</strong> ${rq.limitations?.join(' ') || 'Insufficient data fields in the current survey instrument.'}</p>
+            </div>
+        `;
+        target.appendChild(card);
+    });
+}
+
+/* ── Raw Data Table ── */
+function renderRawDataTable(container) {
+    container.innerHTML = `
+        <div class="page-header"><h2>Raw Response Data</h2></div>
+        <div class="table-card" style="width:100%; border-radius:12px;">
+            <div class="table-scroll">
+                <table id="response-table">
+                    <thead>
+                        <tr id="table-head"></tr>
+                    </thead>
+                    <tbody id="response-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    const data = analysisData;
+    const tbody = document.getElementById('response-tbody');
+    const thead = document.getElementById('table-head');
+
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="10">No data found.</td></tr>`;
+        return;
+    }
+
+    // Dynamic headers based on data keys
+    const keys = ['created_at', 'year_of_study', 'program', 'gender', 'initiation_anxiety', 'belonging', 'social_expansion_desire'];
+    thead.innerHTML = keys.map(k => `<th>${k.replace(/_/g, ' ')}</th>`).join('');
+
+    data.slice().reverse().forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = keys.map(k => `<td>${r[k] !== undefined ? r[k] : '—'}</td>`).join('');
+        tbody.appendChild(tr);
+    });
+}
+
+/* ── Export ── */
+function exportCSV() {
+    if (!analysisData.length) return;
+    const keys = Object.keys(analysisData[0]);
+    const csv = [
+        keys.join(','),
+        ...analysisData.map(r => keys.map(k => `"${String(r[k] || '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `survey_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+}
+
+function exportExcel() {
+    alert('Excel export requires external library. Please use CSV export.');
+}
+
+/* ── Research Answers Page (PRD implementation) ── */
+function renderResearchAnswers(container) {
+    // 1. Header (Section 1)
+    container.innerHTML = `
+        <div class="page-header">
+            <h2>Research Answers</h2>
+            <p>Automatically generated insights answering the defined research questions based on survey responses.</p>
+        </div>
+    `;
+
+    // 2. Dataset Overview (Section 2)
+    const validCount = engine.data.length;
+    const totalCount = engine.rawData.length;
+    const suspectCount = totalCount - validCount;
+
+    const summaryGrid = document.createElement('div');
+    summaryGrid.className = 'dataset-overview-grid';
+    summaryGrid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-num">${totalCount}</div>
+            <div class="stat-label">Total Responses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">${validCount}</div>
+            <div class="stat-label">Valid Responses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">${suspectCount}</div>
+            <div class="stat-label" style="color:#FF3B30;">Suspect Submissions</div>
+        </div>
+    `;
+    container.appendChild(summaryGrid);
+
+    // 3. Generate Answers
+    const answersGenerator = new ResearchAnswerGenerator(window.analysisResults, instructions);
+    const answers = answersGenerator.generateAnswers();
+
+    // 4. Research Objectives Accordion (Section 3)
+    instructions.research_objectives.forEach(obj => {
+        const accordion = document.createElement('div');
+        accordion.className = 'objective-group';
+
+        const rqsForObj = instructions.research_questions.filter(q => q.objective_id === obj.objective_id);
+
+        accordion.innerHTML = `
+            <div class="accordion-header" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'none' ? 'block' : 'none')">
+                <span>${obj.objective_id.replace('obj_', 'Objective ')}: ${obj.title}</span>
+                <span style="font-size:12px; font-weight:normal; opacity:0.5;">${rqsForObj.length} Questions ▾</span>
+            </div>
+            <div class="accordion-content" style="display:none; padding: 12px 0;"></div>
+        `;
+
+        const content = accordion.querySelector('.accordion-content');
+
+        rqsForObj.forEach(rq => {
+            const answerData = answers[rq.rq_id];
+            const card = document.createElement('div');
+            card.className = 'answer-card';
+
+            const statusClass = rq.support_level === 'fully_supported' ? 'status-fully' :
+                (rq.support_level === 'partially_supported' ? 'status-partially' : 'status-not');
+
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <h4>${rq.question}</h4>
+                    <span class="status-badge ${statusClass}">${rq.support_level.replace('_', ' ')}</span>
+                </div>
+                
+                <div class="answer-body">
+                    <div class="answer-section">
+                        <div class="answer-section-label">Semantic Answer</div>
+                        <div class="semantic-text">${answerData.semantic_answer}</div>
+                    </div>
+                    
+                    <div class="answer-section">
+                        <div class="answer-section-label">Evidence Summary</div>
+                        <div class="evidence-summary">${answerData.evidence_summary}</div>
+                    </div>
+
+                    <div class="answer-section">
+                        <div class="answer-section-label">Source Fields</div>
+                        <div style="font-size:11px; font-family:monospace; color:rgba(0,0,0,0.5);">
+                            ${rq.db_fields?.join(', ') || 'None'}
+                        </div>
+                    </div>
+
+                    ${rq.limitations ? `
+                    <div class="answer-section">
+                        <div class="answer-section-label">Limitations</div>
+                        <div style="font-size:12px; color:#FF9500;">
+                            ${rq.limitations.join(' ')}
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+            content.appendChild(card);
+        });
+
+        container.appendChild(accordion);
+    });
+}
+
+// Global hook for auth
+window.checkAuth = checkAuth;
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('auth-pass')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') checkAuth();
     });
-    document.getElementById('auth-user')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') document.getElementById('auth-pass')?.focus();
-    });
 });
-
-/* ═══════════════════════════════════════
-   LOAD DATA
-══════════════════════════════════════ */
-function loadResponsesLocal() {
-    try {
-        const raw = localStorage.getItem('survey_responses');
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-}
-
-/**
- * Normalise Supabase rows (snake_case DB columns → camelCase keys
- * the admin charts expect, e.g. trait_er → trait_ER, created_at → timestamp).
- */
-function normaliseRow(r) {
-    return {
-        ...r,
-        timestamp: r.created_at || r.timestamp,
-        // Map trait columns if they are snake_case in DB
-        trait_ER: r.trait_er ?? r.trait_ER,
-        trait_CR: r.trait_cr ?? r.trait_CR,
-        trait_SI: r.trait_si ?? r.trait_SI,
-        trait_PF: r.trait_pf ?? r.trait_PF,
-        trait_GP: r.trait_gp ?? r.trait_GP,
-        trait_SE: r.trait_se ?? r.trait_SE,
-        trait_ED: r.trait_ed ?? r.trait_ED,
-        // Map legacy/mismatched keys to the schema
-        belonging_score: r.belonging,
-        initiation_ease_score: r.initiation_anxiety,
-        digital_openness: r.social_expansion_desire,
-        comfort_approaching: r.first_interaction_comfort,
-        approached_recently: r.social_frequency,
-        wanted_talk_no_action: r.overthinking,
-        safe_features_text: r.safety_factors
-    };
-}
-
-/* ═══════════════════════════════════════
-   CHART DEFAULTS
-══════════════════════════════════════ */
-// Apple system font stack for charts
-Chart.defaults.font = { family: "-apple-system,'SF Pro Text','Helvetica Neue',sans-serif", size: 12 };
-Chart.defaults.color = 'rgba(60,60,67,0.60)'; // iOS secondary label
-
-// iOS system colors (light theme)
-const PALETTE = [
-    '#007AFF', // System Blue
-    '#34C759', // System Green
-    '#FF9500', // System Orange
-    '#AF52DE', // System Purple
-    '#FF2D55', // System Pink
-    '#5AC8FA', // System Teal
-    '#FFCC00', // System Yellow
-];
-const GRID_COLOR = 'rgba(60,60,67,0.10)'; // iOS separator on white
-const TICK_COLOR = 'rgba(60,60,67,0.50)';
-const TOOLTIP_OPTS = {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderColor: 'rgba(60,60,67,0.15)',
-    borderWidth: 1,
-    titleColor: '#000',
-    bodyColor: 'rgba(60,60,67,0.70)',
-    cornerRadius: 10,
-    padding: 10,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
-};
-
-function baseBarOpts(indexAxis = 'x') {
-    return {
-        indexAxis,
-        responsive: true,
-        plugins: { legend: { display: false }, tooltip: TOOLTIP_OPTS },
-        scales: {
-            x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
-            y: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
-        },
-    };
-}
-
-/* ═══════════════════════════════════════
-   INIT ADMIN
-══════════════════════════════════════ */
-async function initAdmin() {
-    let data = null;
-
-    // Try Supabase first
-    if (typeof fetchFromSupabase === 'function') {
-        try {
-            const rows = await fetchFromSupabase();
-            if (rows && rows.length > 0) {
-                data = rows.map(normaliseRow);
-                console.log(`[Admin] Using ${data.length} rows from Supabase`);
-            }
-        } catch (e) {
-            console.warn('[Admin] Supabase fetch failed, using localStorage:', e);
-        }
-    }
-
-
-    // Fallback to localStorage
-    if (!data) {
-        data = loadResponsesLocal();
-        console.log(`[Admin] Using ${data.length} rows from localStorage`);
-    }
-
-    renderStats(data);
-    renderLikertChart(data);
-    renderBelongingDonut(data);
-    renderBarriersChart(data);
-    renderYearBelongingChart(data);
-    renderTable(data);
-}
-
-/* ═══════════════════════════════════════
-   STATS CARDS
-══════════════════════════════════════ */
-function avg(data, key) {
-    const vals = data.map(r => parseFloat(r[key])).filter(v => !isNaN(v) && v > 0);
-    if (!vals.length) return null;
-    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
-}
-
-function renderStats(data) {
-    document.getElementById('stat-total').textContent = data.length;
-
-    const belonging = avg(data, 'belonging');
-    const initAnx = avg(data, 'initiation_anxiety');
-    const isolation = avg(data, 'social_isolation');
-    const panasPos = avg(data, 'panas_positive_score');
-    const panasNeg = avg(data, 'panas_negative_score');
-
-    document.getElementById('stat-belonging').textContent = belonging || '—';
-    document.getElementById('stat-initiation').textContent = initAnx || '—';
-    document.getElementById('stat-digital').textContent = isolation || '—';
-
-    const posEl = document.getElementById('stat-panas-pos');
-    const negEl = document.getElementById('stat-panas-neg');
-    if (posEl) posEl.textContent = panasPos || '—';
-    if (negEl) negEl.textContent = panasNeg || '—';
-
-    // Disconnected = belonging <= 2
-    const disconnected = data.filter(r => parseInt(r.belonging) <= 2).length;
-    const pct = data.length ? Math.round(disconnected / data.length * 100) : 0;
-    document.getElementById('stat-disconnected').textContent = data.length ? `${pct}%` : '—%';
-}
-
-/* ═══════════════════════════════════════
-   CHART 1 – LIKERT AVERAGES
-══════════════════════════════════════ */
-function renderLikertChart(data) {
-    const keys = ['social_satisfaction', 'belonging', 'close_friends', 'social_isolation',
-        'initiation_anxiety', 'overthinking', 'avoidance', 'judgment_concern',
-        'social_expansion_desire', 'online_comfort', 'structured_preference', 'spontaneous_value'];
-    const labels = ['Social Satisfaction', 'Belonging', 'Close Friends', 'Social Isolation',
-        'Init. Anxiety', 'Overthinking', 'Avoidance', 'Judgment Concern',
-        'Expand Circle', 'Online Comfort', 'Structured Pref.', 'Spontaneous Value'];
-    const values = keys.map(k => {
-        const a = avg(data, k);
-        return a ? parseFloat(a) : 0;
-    });
-
-    const ctx = document.getElementById('chart-likert')?.getContext('2d');
-    if (!ctx) return;
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                data: values,
-                backgroundColor: PALETTE.slice(0, 4).map(c => c + '33'),
-                borderColor: PALETTE.slice(0, 4),
-                borderWidth: 2,
-                borderRadius: 8,
-            }],
-        },
-        options: {
-            ...baseBarOpts(),
-            scales: {
-                x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
-                y: { min: 0, max: 5, grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR, stepSize: 1 } },
-            },
-        },
-    });
-}
-
-/* ═══════════════════════════════════════
-   CHART 2 – BELONGING DONUT
-══════════════════════════════════════ */
-function renderBelongingDonut(data) {
-    const connected = data.filter(r => parseInt(r.belonging) >= 3).length;
-    const disconnected = data.filter(r => parseInt(r.belonging) <= 2 && r.belonging !== null).length;
-    const unanswered = data.filter(r => r.belonging === null || r.belonging === undefined).length;
-
-    const ctx = document.getElementById('chart-belonging-donut')?.getContext('2d');
-    if (!ctx) return;
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Connected (3–5)', 'Disconnected (1–2)', 'Not answered'],
-            datasets: [{
-                data: [connected, disconnected, unanswered],
-                backgroundColor: ['#007AFF33', '#FF3B3033', '#8E8E9333'],
-                borderColor: ['#007AFF', '#FF3B30', '#8E8E93'],
-                borderWidth: 2,
-                hoverOffset: 8,
-            }],
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: true, position: 'bottom', labels: { padding: 16, color: 'rgba(60,60,67,0.60)', boxWidth: 14, borderRadius: 4 } },
-                tooltip: TOOLTIP_OPTS,
-            },
-            cutout: '65%',
-        },
-    });
-}
-
-/* ═══════════════════════════════════════
-   CHART 3 – TOP BARRIERS
-══════════════════════════════════════ */
-function renderBarriersChart(data) {
-    const barrierMap = {
-        'top_barrier_academics': 'Academic Pressure',
-        'top_barrier_spaces': 'No Shared Spaces',
-        'top_barrier_introv': 'Introversion',
-        'top_barrier_cliques': 'Clique Dynamics',
-        'top_barrier_screens': 'Phone Distraction',
-        'top_barrier_judgment': 'Fear of Judgment',
-        'top_barrier_opportunities': 'No Events / Opps',
-    };
-
-    const labels = Object.values(barrierMap);
-    const counts = Object.keys(barrierMap).map(k => data.filter(r => r[k] === true).length);
-
-    const ctx = document.getElementById('chart-barriers')?.getContext('2d');
-    if (!ctx) return;
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                data: counts,
-                backgroundColor: PALETTE.map(c => c + '33'),
-                borderColor: PALETTE,
-                borderWidth: 2,
-                borderRadius: 8,
-            }],
-        },
-        options: {
-            ...baseBarOpts('y'),
-            scales: {
-                x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR, stepSize: 1 } },
-                y: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
-            },
-        },
-    });
-}
-
-/* ═══════════════════════════════════════
-   CHART 4 – YEAR × BELONGING CROSS-TAB
-══════════════════════════════════════ */
-function renderYearBelongingChart(data) {
-    const yearOrder = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'PG Year 1', 'PG Year 2', 'PhD'];
-    const grouped = {};
-
-    data.forEach(r => {
-        const y = r.year_of_study;
-        const b = parseFloat(r.belonging);
-        if (!y || isNaN(b)) return;
-        if (!grouped[y]) grouped[y] = [];
-        grouped[y].push(b);
-    });
-
-    const labels = yearOrder.filter(y => grouped[y]);
-    const values = labels.map(y => {
-        const arr = grouped[y];
-        return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
-    });
-
-    const ctx = document.getElementById('chart-year-belonging')?.getContext('2d');
-    if (!ctx) return;
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Avg Belonging',
-                data: values,
-                backgroundColor: '#007AFF33',
-                borderColor: '#007AFF',
-                borderWidth: 2,
-                borderRadius: 8,
-            }],
-        },
-        options: {
-            ...baseBarOpts(),
-            plugins: {
-                legend: { display: true, labels: { color: 'rgba(60,60,67,0.60)', boxWidth: 12, borderRadius: 4 } },
-                tooltip: TOOLTIP_OPTS,
-            },
-            scales: {
-                x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
-                y: { min: 0, max: 5, grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR, stepSize: 1 } },
-            },
-        },
-    });
-}
-
-/* ═══════════════════════════════════════
-   RESPONSE TABLE
-══════════════════════════════════════ */
-function renderTable(data) {
-    const tbody = document.getElementById('response-tbody');
-    if (!tbody) return;
-
-    if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)">No responses yet. Share the survey to collect data.</td></tr>`;
-        return;
-    }
-
-    const rows = [...data].reverse().map((r, i) => {
-        const ts = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : '—';
-        const truncate = (s, n) => s && s.length > n ? s.slice(0, n) + '…' : (s || '—');
-        return `<tr>
-      <td>${data.length - i}</td>
-      <td>${ts}</td>
-      <td>${r.year_of_study || '—'}</td>
-      <td>${r.gender || '—'}</td>
-      <td>${r.residence || '—'}</td>
-      <td style="text-align:center;">${r.initiation_ease_score || '—'}</td>
-      <td style="text-align:center;">${r.belonging_score || '—'}</td>
-      <td style="text-align:center;">${r.digital_openness || '—'}</td>
-      <td style="text-align:center;">${r.comfort_approaching || '—'}</td>
-      <td style="text-align:center;">${r.approached_recently || '—'}</td>
-      <td style="text-align:center;">${r.wanted_talk_no_action || '—'}</td>
-      <td title="${r.safe_features_text || ''}">${truncate(r.safe_features_text, 40)}</td>
-    </tr>`;
-    });
-
-    tbody.innerHTML = rows.join('');
-}
-
-/* ═══════════════════════════════════════
-   CSV EXPORT
-══════════════════════════════════════ */
-const CSV_COLUMNS = [
-    'timestamp',
-    // PANAS items (1–20)
-    'panas_1', 'panas_2', 'panas_3', 'panas_4', 'panas_5',
-    'panas_6', 'panas_7', 'panas_8', 'panas_9', 'panas_10',
-    'panas_11', 'panas_12', 'panas_13', 'panas_14', 'panas_15',
-    'panas_16', 'panas_17', 'panas_18', 'panas_19', 'panas_20',
-    // PANAS computed
-    'panas_positive_score', 'panas_negative_score',
-    // Demographics (Q1–Q6)
-    'age_group', 'year_of_study', 'program', 'stream', 'gender', 'residence',
-    // Social Experience (Q6s–Q9)
-    'social_satisfaction', 'belonging', 'close_friends', 'social_isolation',
-    // Social Behavior (Q10–Q11)
-    'social_frequency', 'friendship_ease',
-    // Initiation Anxiety (Q12–Q15)
-    'initiation_anxiety', 'overthinking', 'avoidance', 'judgment_concern',
-    // Initiation Behavior (Q16–Q17)
-    'conversation_initiator', 'first_interaction_comfort',
-    // Friendship Source – Q18 checkboxes
-    'fs_classes', 'fs_hostel', 'fs_clubs', 'fs_mutual', 'fs_online', 'fs_other',
-    // Initiation Barriers – Q19 checkboxes
-    'ib_fear_rejection', 'ib_not_knowing', 'ib_formed_groups',
-    'ib_no_topic', 'ib_low_energy', 'ib_nothing', 'ib_other',
-    // Q20–Q23 Likerts
-    'social_expansion_desire', 'online_comfort', 'structured_preference', 'spontaneous_value',
-    // Open text Q24–Q25
-    'social_friction_open', 'safety_factors',
-];
-
-
-function toCSVRow(row) {
-    return CSV_COLUMNS.map(col => {
-        const val = row[col] ?? '';
-        const s = String(val);
-        return s.includes(',') || s.includes('"') || s.includes('\n')
-            ? `"${s.replace(/"/g, '""')}"`
-            : s;
-    }).join(',');
-}
-
-function exportCSV() {
-    const data = loadResponsesLocal();
-    if (!data.length) { alert('No responses to export yet.'); return; }
-
-    const header = CSV_COLUMNS.join(',');
-    const rows = data.map(toCSVRow);
-    const csv = [header, ...rows].join('\r\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    triggerDownload(blob, `iiit_survey_responses_${dateTag()}.csv`);
-}
-
-/* ═══════════════════════════════════════
-   EXCEL EXPORT (SheetJS)
-══════════════════════════════════════ */
-function exportExcel() {
-    const data = loadResponsesLocal();
-    if (!data.length) { alert('No responses to export yet.'); return; }
-
-    const rows = data.map(r => {
-        const out = {};
-        CSV_COLUMNS.forEach(col => { out[col] = r[col] ?? ''; });
-        return out;
-    });
-
-    try {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(rows, { header: CSV_COLUMNS });
-        XLSX.utils.book_append_sheet(wb, ws, 'Responses');
-        XLSX.writeFile(wb, `iiit_survey_responses_${dateTag()}.xlsx`);
-    } catch (e) {
-        alert('Excel export failed. Please use CSV export instead.\n\n' + e.message);
-    }
-}
-
-/* ═══════════════════════════════════════
-   HELPERS
-══════════════════════════════════════ */
-function triggerDownload(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function dateTag() {
-    return new Date().toISOString().slice(0, 10);
-}

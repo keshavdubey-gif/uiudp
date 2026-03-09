@@ -262,8 +262,219 @@
                 padding: 32px 14px 80px;
             }
         }
+
+        /* ── Research Dashboard Layout ── */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: calc(100vh - 96px);
+            gap: 24px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 24px;
+            padding: 32px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+            position: sticky;
+            top: 48px;
+            height: calc(100vh - 96px);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 24px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(60, 60, 67, 0.60);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 122, 255, 0.05);
+            color: #007AFF;
+        }
+
+        .nav-btn.active {
+            background: #007AFF;
+            color: #fff;
+        }
+
+        .research-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding-bottom: 40px;
+        }
+
+        /* Research Widgets */
+        .page-header {
+            margin-bottom: 8px;
+        }
+
+        .page-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header p {
+            font-size: 15px;
+            color: rgba(60, 60, 67, 0.60);
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .theme-panel {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .theme-chip {
+            display: inline-block;
+            background: #F2F2F7;
+            padding: 6px 12px;
+            border-radius: 8px;
+            margin: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .unsupported-notice {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px dashed #FF9500;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            color: #AF5200;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-left: 8px;
+        }
+
+        .status-fully {
+            background: #34C75922;
+            color: #34C759;
+        }
+
+        .status-partially {
+            background: #FF950022;
+            color: #FF9500;
+        }
+
+        .status-not {
+            background: #FF3B3022;
+            color: #FF3B30;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+                height: auto;
+            }
+        }
+
+        /* Answer Cards (PRD Section 4) */
+        .answer-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+        }
+
+        .answer-card h4 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .answer-body {
+            margin-top: 20px;
+        }
+
+        .answer-section {
+            margin-bottom: 18px;
+        }
+
+        .answer-section-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(60, 60, 67, 0.40);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .semantic-text {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #000;
+            background: rgba(0, 122, 255, 0.03);
+            border-left: 3px solid #007AFF;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .evidence-summary {
+            font-size: 14px;
+            color: rgba(60, 60, 67, 0.60);
+        }
+
+        .accordion-header {
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .accordion-header:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .dataset-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
     </style>
-</head>
 
 <body>
 
@@ -290,106 +501,48 @@
     <!-- Main Admin Content -->
     <div class="admin-shell" id="admin-content" style="display:none;">
 
-        <!-- Top bar -->
-        <div class="admin-topbar">
-            <div>
-                <span class="admin-tag">Research Admin</span>
-                <h1>Survey Analytics</h1>
-            </div>
-            <div class="export-bar">
-                <button class="btn btn-ghost" onclick="exportCSV()">⬇&nbsp; Export CSV</button>
-                <button class="btn btn-primary" onclick="exportExcel()">⬇&nbsp; Export Excel</button>
-            </div>
-        </div>
+        <!-- Sidebar + Content Layout -->
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <div class="admin-logo">
+                    <span class="admin-tag">Research Admin</span>
+                    <h1>Survey Analytics</h1>
+                </div>
+                <nav class="sidebar-nav" id="sidebar-nav">
+                    <button class="nav-btn active" data-page="dashboard_01">Overview</button>
+                    <button class="nav-btn" data-page="dashboard_02">Problem Validation</button>
+                    <button class="nav-btn" data-page="dashboard_03">Primary User & Segments</button>
+                    <button class="nav-btn" data-page="dashboard_04">Initiation Barriers</button>
+                    <button class="nav-btn" data-page="dashboard_05">Context & Prefs</button>
+                    <button class="nav-btn" data-page="dashboard_06">Safety & Trust</button>
+                    <button class="nav-btn" data-page="dashboard_07">Spontaneity</button>
+                    <button class="nav-btn" data-page="research_answers">Research Answers</button>
+                    <button class="nav-btn" data-page="unsupported_list">Unsupported Questions</button>
+                    <button class="nav-btn" data-page="response_table">Raw Data</button>
+                </nav>
+                <div class="export-bar"
+                    style="margin-top:auto; padding-top:20px; border-top: 1px solid rgba(0,0,0,0.1);">
+                    <button class="btn btn-ghost" onclick="exportCSV()" style="width:100%; margin-bottom:8px;">⬇ CSV
+                        Export</button>
+                    <button class="btn btn-ghost" onclick="exportExcel()" style="width:100%;">⬇ Excel Export</button>
+                </div>
+            </aside>
 
-        <!-- Key stats -->
-        <div class="stat-grid" id="stat-grid">
-            <div class="stat-card">
-                <div class="stat-num" id="stat-total">0</div>
-                <div class="stat-label">Total Responses</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" id="stat-belonging">—</div>
-                <div class="stat-label">Avg Belonging</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" id="stat-initiation">—</div>
-                <div class="stat-label">Avg Initiation</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" id="stat-disconnected">—%</div>
-                <div class="stat-label">Feel Disconnected</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" id="stat-digital">—</div>
-                <div class="stat-label">Digital Openness</div>
-            </div>
-            <div class="stat-card" style="border-top: 3px solid #34C759;">
-                <div class="stat-num" id="stat-panas-pos" style="color:#34C759;">—</div>
-                <div class="stat-label">Avg Positive Affect <span
-                        style="font-size:10px;color:rgba(60,60,67,.40);">/50</span></div>
-            </div>
-            <div class="stat-card" style="border-top: 3px solid #FF3B30;">
-                <div class="stat-num" id="stat-panas-neg" style="color:#FF3B30;">—</div>
-                <div class="stat-label">Avg Negative Affect <span
-                        style="font-size:10px;color:rgba(60,60,67,.40);">/50</span></div>
-            </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="charts-grid">
-            <div class="chart-card">
-                <h3>Avg Likert Scores</h3>
-                <canvas id="chart-likert"></canvas>
-            </div>
-            <div class="chart-card">
-                <h3>Belonging Breakdown</h3>
-                <canvas id="chart-belonging-donut"></canvas>
-            </div>
-            <div class="chart-card full">
-                <h3>Top Barriers to Connection</h3>
-                <canvas id="chart-barriers"></canvas>
-            </div>
-            <div class="chart-card full">
-                <h3>Belonging Score by Year of Study</h3>
-                <canvas id="chart-year-belonging"></canvas>
-            </div>
-        </div>
-
-        <!-- Response table -->
-        <div class="table-card">
-            <h3>All Responses (latest first)</h3>
-            <div class="table-scroll">
-                <table id="response-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Timestamp</th>
-                            <th>Year</th>
-                            <th>Gender</th>
-                            <th>Residence</th>
-                            <th>Initiation</th>
-                            <th>Belonging</th>
-                            <th>Digital</th>
-                            <th>Comfort</th>
-                            <th>Approached</th>
-                            <th>Wanted→No</th>
-                            <th>Open Text</th>
-                        </tr>
-                    </thead>
-                    <tbody id="response-tbody"></tbody>
-                </table>
-            </div>
+            <main class="research-content" id="research-content">
+                <!-- Dynamic content will be injected here -->
+                <div id="page-container"></div>
+            </main>
         </div>
 
     </div>
 
-    <!-- Cloud Storage (Supabase) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-client.js"></script>
-
+    <script src="instructions.js"></script>
+    <script src="analysis-engine.js"></script>
+    <script src="research-answers.js"></script>
     <script src="admin.js"></script>
-
 </body>
 
 </html>

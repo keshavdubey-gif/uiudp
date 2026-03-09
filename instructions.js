@@ -1,0 +1,1870 @@
+window.RESEARCH_INSTRUCTIONS = {
+    "engine_meta": {
+        "name": "campus_social_research_analysis_engine",
+        "version": "1.0.0",
+        "description": "Maps user research goal, objectives, research questions, survey questions, database fields, calculations, and dashboard UI components for the Campus Social Experience Survey.",
+        "primary_dataset": "campus_social_survey_responses",
+        "analysis_unit": "individual_response",
+        "notes": [
+            "This engine only uses already collected survey data.",
+            "No survey or DB schema changes are assumed.",
+            "Some research questions are only partially answerable with the current instrument.",
+            "Unsupported questions should be flagged for interviews or future research rounds."
+        ]
+    },
+    "research_goal": {
+        "id": "goal_01",
+        "title": "Social Initiation Gap Validation",
+        "statement": "To understand whether socially hesitant students on campus experience a meaningful social initiation gap where they want connection but struggle to begin it and to identify the conditions, contexts, and safeguards a digital solution would need in order to support low-pressure, judgment-free, spontaneous peer connection that improves belonging and social comfort on campus."
+    },
+    "db_schema_reference": {
+        "table_name": "campus_social_survey_responses",
+        "fields": {
+            "meta": [
+                "id",
+                "created_at",
+                "completion_time_seconds",
+                "suspect_submission",
+                "archetype"
+            ],
+            "demographics": [
+                "age_group",
+                "year_of_study",
+                "program",
+                "stream",
+                "gender",
+                "residence"
+            ],
+            "panas_items": [
+                "panas_1",
+                "panas_2",
+                "panas_3",
+                "panas_4",
+                "panas_5",
+                "panas_6",
+                "panas_7",
+                "panas_8",
+                "panas_9",
+                "panas_10",
+                "panas_11",
+                "panas_12",
+                "panas_13",
+                "panas_14",
+                "panas_15",
+                "panas_16",
+                "panas_17",
+                "panas_18",
+                "panas_19",
+                "panas_20",
+                "panas_positive_score",
+                "panas_negative_score"
+            ],
+            "social_experience": [
+                "social_satisfaction",
+                "belonging",
+                "close_friends",
+                "social_isolation",
+                "social_frequency",
+                "friendship_ease"
+            ],
+            "initiation": [
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern",
+                "conversation_initiator",
+                "first_interaction_comfort"
+            ],
+            "friendship_sources": [
+                "fs_classes",
+                "fs_hostel",
+                "fs_clubs",
+                "fs_mutual",
+                "fs_online",
+                "fs_other"
+            ],
+            "initiation_barriers": [
+                "ib_fear_rejection",
+                "ib_not_knowing",
+                "ib_formed_groups",
+                "ib_no_topic",
+                "ib_low_energy",
+                "ib_nothing",
+                "ib_other"
+            ],
+            "preferences_and_attitudes": [
+                "social_expansion_desire",
+                "online_comfort",
+                "structured_preference",
+                "spontaneous_value"
+            ],
+            "open_text": [
+                "social_friction_open",
+                "safety_factors"
+            ],
+            "trait_fields_optional": [
+                "trait_er",
+                "trait_cr",
+                "trait_si",
+                "trait_pf",
+                "trait_gp",
+                "trait_se",
+                "trait_ed"
+            ]
+        }
+    },
+    "survey_question_reference": {
+        "q1_to_q20": "PANAS items mapped to panas_1 ... panas_20",
+        "q6": "I am satisfied with my overall social experience on campus.",
+        "q7": "I feel like I belong on campus.",
+        "q8": "I have a close friend group on campus.",
+        "q9": "I often feel socially isolated on campus.",
+        "q10": "How often do you interact socially outside academic work?",
+        "q11": "How easy has it been for you to form friendships on campus?",
+        "q12": "I feel anxious when initiating conversations with new people on campus.",
+        "q13": "I overthink what to say before starting a conversation.",
+        "q14": "I avoid starting conversations even when I want to.",
+        "q15": "I worry about being judged when approaching someone new.",
+        "q16": "When meeting someone new, who usually starts the conversation?",
+        "q17": "How comfortable do you usually feel when meeting someone for the first time?",
+        "q18": "Most of my friendships formed through:",
+        "q19": "What usually stops you from initiating conversations?",
+        "q20": "I actively want to expand my social circle.",
+        "q21": "I feel more comfortable initiating conversations online than in person.",
+        "q22": "I prefer social situations that feel low-pressure and structured.",
+        "q23": "Having more spontaneous interactions would improve my campus experience.",
+        "q24": "What makes social interactions on campus easier or harder for you?",
+        "q25": "What would make a new way of meeting students feel safe and comfortable for you?"
+    },
+    "global_metrics": [
+        {
+            "metric_id": "valid_response_count",
+            "label": "Valid Responses",
+            "formula_type": "count",
+            "filters": [
+                "suspect_submission = false"
+            ],
+            "output_type": "integer"
+        },
+        {
+            "metric_id": "suspect_response_count",
+            "label": "Suspect Responses",
+            "formula_type": "count",
+            "filters": [
+                "suspect_submission = true"
+            ],
+            "output_type": "integer"
+        },
+        {
+            "metric_id": "avg_completion_time",
+            "label": "Average Completion Time",
+            "formula_type": "mean",
+            "field": "completion_time_seconds",
+            "filters": [],
+            "output_type": "float_seconds"
+        },
+        {
+            "metric_id": "avg_positive_affect",
+            "label": "Average Positive Affect",
+            "formula_type": "mean",
+            "field": "panas_positive_score",
+            "filters": [
+                "suspect_submission = false"
+            ],
+            "output_type": "float"
+        },
+        {
+            "metric_id": "avg_negative_affect",
+            "label": "Average Negative Affect",
+            "formula_type": "mean",
+            "field": "panas_negative_score",
+            "filters": [
+                "suspect_submission = false"
+            ],
+            "output_type": "float"
+        },
+        {
+            "metric_id": "social_initiation_gap_index",
+            "label": "Social Initiation Gap Index",
+            "formula_type": "composite_mean",
+            "fields": [
+                "social_expansion_desire",
+                "initiation_anxiety",
+                "avoidance"
+            ],
+            "normalization": "none",
+            "filters": [
+                "suspect_submission = false"
+            ],
+            "output_type": "float",
+            "interpretation": {
+                "low": "Low gap",
+                "medium": "Moderate gap",
+                "high": "Strong gap"
+            }
+        },
+        {
+            "metric_id": "initiation_anxiety_index",
+            "label": "Initiation Anxiety Index",
+            "formula_type": "composite_mean",
+            "fields": [
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern"
+            ],
+            "normalization": "none",
+            "filters": [
+                "suspect_submission = false"
+            ],
+            "output_type": "float"
+        },
+        {
+            "metric_id": "belonging_risk_index",
+            "label": "Belonging Risk Index",
+            "formula_type": "composite_mean_with_reverse_code",
+            "fields": [
+                "social_isolation",
+                "close_friends",
+                "belonging",
+                "social_satisfaction"
+            ],
+            "reverse_code_fields": [
+                "close_friends",
+                "belonging",
+                "social_satisfaction"
+            ],
+            "scale_min": 1,
+            "scale_max": 5,
+            "filters": [
+                "suspect_submission = false"
+            ],
+            "output_type": "float",
+            "notes": [
+                "Higher score means higher social risk / lower belonging."
+            ]
+        }
+    ],
+    "research_objectives": [
+        {
+            "objective_id": "obj_01",
+            "title": "Validate whether the core problem truly exists for the target user on campus",
+            "description": "Determine whether students want connection but struggle to initiate it, and how intense that problem is."
+        },
+        {
+            "objective_id": "obj_02",
+            "title": "Identify who is most affected and define the primary user more clearly",
+            "description": "Determine which student groups and psychological profiles are most likely to experience the social initiation gap."
+        },
+        {
+            "objective_id": "obj_03",
+            "title": "Understand the barriers that prevent students from initiating peer interaction",
+            "description": "Identify emotional, cognitive, and contextual blockers to starting conversations."
+        },
+        {
+            "objective_id": "obj_04",
+            "title": "Understand the kinds of interaction settings that feel safest and easiest",
+            "description": "Identify contexts and formats that make peer interaction easier, lower-pressure, and more natural."
+        },
+        {
+            "objective_id": "obj_05",
+            "title": "Understand what makes a peer-connection experience feel safe, judgment-free, and trustworthy",
+            "description": "Identify emotional safety factors and perceived conditions for comfortable interaction."
+        },
+        {
+            "objective_id": "obj_06",
+            "title": "Investigate whether students need spontaneous connection, not just formal social opportunities",
+            "description": "Assess whether students value spontaneous interaction opportunities and whether current social settings feel effortful."
+        },
+        {
+            "objective_id": "obj_07",
+            "title": "Examine the role of digital mediation in lowering the barrier to first interaction",
+            "description": "Assess whether online-first or digitally mediated interaction reduces initiation pressure."
+        },
+        {
+            "objective_id": "obj_08",
+            "title": "Understand whether improved initiation could strengthen belonging over time",
+            "description": "Examine whether students associate easier first interactions with greater social connectedness and belonging."
+        }
+    ],
+    "research_questions": [
+        {
+            "rq_id": "rq_01",
+            "objective_id": "obj_01",
+            "question": "Do students on campus want more peer connection but struggle to initiate conversation?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q20",
+                "q12",
+                "q14"
+            ],
+            "db_fields": [
+                "social_expansion_desire",
+                "initiation_anxiety",
+                "avoidance"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_01_a",
+                    "label": "Average desire to expand social circle",
+                    "formula_type": "mean",
+                    "field": "social_expansion_desire"
+                },
+                {
+                    "calc_id": "rq_01_b",
+                    "label": "Average initiation difficulty",
+                    "formula_type": "composite_mean",
+                    "fields": [
+                        "initiation_anxiety",
+                        "avoidance"
+                    ]
+                },
+                {
+                    "calc_id": "rq_01_c",
+                    "label": "Social initiation gap index",
+                    "formula_type": "composite_mean",
+                    "fields": [
+                        "social_expansion_desire",
+                        "initiation_anxiety",
+                        "avoidance"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "kpi_triplet",
+                "secondary_widgets": [
+                    "stacked_bar",
+                    "distribution_histogram"
+                ],
+                "labels": [
+                    "Wants More Connection",
+                    "Feels Anxiety Initiating",
+                    "Avoids Starting Conversations"
+                ]
+            },
+            "interpretation_rule": "If desire is high and initiation difficulty is high, the social initiation gap exists."
+        },
+        {
+            "rq_id": "rq_02",
+            "objective_id": "obj_01",
+            "question": "How common are feelings of hesitation, anxiety, overthinking, or fear of judgment when approaching new peers?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q12",
+                "q13",
+                "q14",
+                "q15",
+                "q17"
+            ],
+            "db_fields": [
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern",
+                "first_interaction_comfort"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_02_a",
+                    "label": "Initiation anxiety index",
+                    "formula_type": "composite_mean",
+                    "fields": [
+                        "initiation_anxiety",
+                        "overthinking",
+                        "avoidance",
+                        "judgment_concern"
+                    ]
+                },
+                {
+                    "calc_id": "rq_02_b",
+                    "label": "Comfort distribution",
+                    "formula_type": "frequency_distribution",
+                    "field": "first_interaction_comfort"
+                }
+            ],
+            "ui": {
+                "primary_widget": "radar_chart",
+                "secondary_widgets": [
+                    "likert_distribution",
+                    "heatmap"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_03",
+            "objective_id": "obj_01",
+            "question": "To what extent do students without an existing friend group feel lower belonging or higher social isolation?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q8",
+                "q7",
+                "q9"
+            ],
+            "db_fields": [
+                "close_friends",
+                "belonging",
+                "social_isolation"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_03_a",
+                    "label": "Belonging by friend group level",
+                    "formula_type": "group_mean_compare",
+                    "group_field": "close_friends",
+                    "value_field": "belonging"
+                },
+                {
+                    "calc_id": "rq_03_b",
+                    "label": "Isolation by friend group level",
+                    "formula_type": "group_mean_compare",
+                    "group_field": "close_friends",
+                    "value_field": "social_isolation"
+                },
+                {
+                    "calc_id": "rq_03_c",
+                    "label": "Correlation between friend group and belonging",
+                    "formula_type": "correlation",
+                    "field_x": "close_friends",
+                    "field_y": "belonging"
+                }
+            ],
+            "ui": {
+                "primary_widget": "grouped_bar_chart",
+                "secondary_widgets": [
+                    "scatter_plot",
+                    "correlation_card"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_04",
+            "objective_id": "obj_01",
+            "question": "Are there students who are socially inactive by preference, and others who want connection but feel blocked from starting it?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q10",
+                "q20"
+            ],
+            "db_fields": [
+                "social_frequency",
+                "social_expansion_desire"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_04_a",
+                    "label": "Interaction typology",
+                    "formula_type": "rule_based_segmentation",
+                    "rules": [
+                        {
+                            "label": "socially_inactive_by_preference",
+                            "conditions": [
+                                "social_frequency in ['Never','Rarely']",
+                                "social_expansion_desire <= 2"
+                            ]
+                        },
+                        {
+                            "label": "socially_blocked_but_want_connection",
+                            "conditions": [
+                                "social_frequency in ['Never','Rarely']",
+                                "social_expansion_desire >= 4"
+                            ]
+                        },
+                        {
+                            "label": "socially_active_and_connected",
+                            "conditions": [
+                                "social_frequency in ['Often','Very Often']",
+                                "social_expansion_desire >= 3"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "segment_pie_chart",
+                "secondary_widgets": [
+                    "segment_table"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_05",
+            "objective_id": "obj_01",
+            "question": "How intense is this problem in everyday campus life?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q6",
+                "q7",
+                "q8",
+                "q9",
+                "q10",
+                "q11"
+            ],
+            "db_fields": [
+                "social_satisfaction",
+                "belonging",
+                "close_friends",
+                "social_isolation",
+                "social_frequency",
+                "friendship_ease"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_05_a",
+                    "label": "Belonging risk index",
+                    "formula_type": "composite_mean_with_reverse_code",
+                    "fields": [
+                        "social_isolation",
+                        "close_friends",
+                        "belonging",
+                        "social_satisfaction"
+                    ],
+                    "reverse_code_fields": [
+                        "close_friends",
+                        "belonging",
+                        "social_satisfaction"
+                    ],
+                    "scale_min": 1,
+                    "scale_max": 5
+                },
+                {
+                    "calc_id": "rq_05_b",
+                    "label": "Friendship ease distribution",
+                    "formula_type": "frequency_distribution",
+                    "field": "friendship_ease"
+                }
+            ],
+            "ui": {
+                "primary_widget": "summary_score_card",
+                "secondary_widgets": [
+                    "distribution_histogram",
+                    "traffic_light_panel"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_06",
+            "objective_id": "obj_02",
+            "question": "Which students are most likely to experience the social initiation gap: first-years, lateral entrants, off-campus students, day scholars, later-year introverts, or others?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "demographics",
+                "q12",
+                "q13",
+                "q14",
+                "q15",
+                "q20"
+            ],
+            "db_fields": [
+                "year_of_study",
+                "residence",
+                "program",
+                "gender",
+                "age_group",
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern",
+                "social_expansion_desire"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_06_a",
+                    "label": "Initiation gap by year",
+                    "formula_type": "group_composite_mean",
+                    "group_field": "year_of_study",
+                    "fields": [
+                        "social_expansion_desire",
+                        "initiation_anxiety",
+                        "avoidance"
+                    ]
+                },
+                {
+                    "calc_id": "rq_06_b",
+                    "label": "Initiation anxiety by residence",
+                    "formula_type": "group_mean_compare",
+                    "group_field": "residence",
+                    "value_field": "initiation_anxiety"
+                }
+            ],
+            "ui": {
+                "primary_widget": "segmented_bar_chart",
+                "secondary_widgets": [
+                    "cross_tab_table"
+                ]
+            },
+            "limitations": [
+                "Lateral entry / transfers are not directly captured in current demographics.",
+                "Introversion is not directly measured."
+            ]
+        },
+        {
+            "rq_id": "rq_07",
+            "objective_id": "obj_02",
+            "question": "What distinguishes students who are socially anxious from students who are simply introverted or selectively social?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q10",
+                "q12",
+                "q13",
+                "q14",
+                "q15",
+                "q20"
+            ],
+            "db_fields": [
+                "social_frequency",
+                "social_expansion_desire",
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_07_a",
+                    "label": "Socially anxious profile proxy",
+                    "formula_type": "rule_based_segmentation",
+                    "rules": [
+                        {
+                            "label": "likely_socially_anxious",
+                            "conditions": [
+                                "initiation_anxiety >= 4",
+                                "overthinking >= 4",
+                                "judgment_concern >= 4",
+                                "social_expansion_desire >= 3"
+                            ]
+                        },
+                        {
+                            "label": "likely_selectively_social",
+                            "conditions": [
+                                "social_frequency in ['Rarely','Sometimes']",
+                                "social_expansion_desire <= 3",
+                                "initiation_anxiety <= 2"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "segment_cards",
+                "secondary_widgets": [
+                    "profile_comparison_table"
+                ]
+            },
+            "limitations": [
+                "This is a proxy model only.",
+                "Introversion is not directly measured in the current survey."
+            ]
+        },
+        {
+            "rq_id": "rq_08",
+            "objective_id": "obj_02",
+            "question": "Are students with few or no close campus friendships more likely to report hesitation in starting conversations?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q8",
+                "q12",
+                "q13",
+                "q14",
+                "q15"
+            ],
+            "db_fields": [
+                "close_friends",
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_08_a",
+                    "label": "Hesitation by close friend group level",
+                    "formula_type": "group_composite_mean",
+                    "group_field": "close_friends",
+                    "fields": [
+                        "initiation_anxiety",
+                        "overthinking",
+                        "avoidance",
+                        "judgment_concern"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "line_or_bar_chart",
+                "secondary_widgets": [
+                    "correlation_card"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_09",
+            "objective_id": "obj_02",
+            "question": "Do certain living situations or campus pathways make spontaneous connection easier or harder?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "demographics",
+                "q18",
+                "q23",
+                "q24"
+            ],
+            "db_fields": [
+                "residence",
+                "year_of_study",
+                "fs_classes",
+                "fs_hostel",
+                "fs_clubs",
+                "fs_mutual",
+                "fs_online",
+                "spontaneous_value",
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_09_a",
+                    "label": "Spontaneous interaction value by residence",
+                    "formula_type": "group_mean_compare",
+                    "group_field": "residence",
+                    "value_field": "spontaneous_value"
+                }
+            ],
+            "ui": {
+                "primary_widget": "segmented_mean_chart",
+                "secondary_widgets": [
+                    "open_text_theme_panel"
+                ]
+            },
+            "limitations": [
+                "Campus pathways are not directly measured."
+            ]
+        },
+        {
+            "rq_id": "rq_10",
+            "objective_id": "obj_02",
+            "question": "What emotional and behavioral traits best describe the students who need this solution most?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "PANAS",
+                "q12",
+                "q13",
+                "q14",
+                "q15",
+                "q20",
+                "q7",
+                "q9"
+            ],
+            "db_fields": [
+                "panas_positive_score",
+                "panas_negative_score",
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern",
+                "social_expansion_desire",
+                "belonging",
+                "social_isolation",
+                "archetype"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_10_a",
+                    "label": "High-need student profile",
+                    "formula_type": "rule_based_segmentation",
+                    "rules": [
+                        {
+                            "label": "high_need_student",
+                            "conditions": [
+                                "social_expansion_desire >= 4",
+                                "initiation_anxiety >= 4",
+                                "avoidance >= 4",
+                                "belonging <= 2 OR social_isolation >= 4"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "calc_id": "rq_10_b",
+                    "label": "Affect comparison for high-need students",
+                    "formula_type": "group_mean_compare",
+                    "group_field": "derived_segment_high_need_student",
+                    "value_fields": [
+                        "panas_positive_score",
+                        "panas_negative_score"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "persona_summary_panel",
+                "secondary_widgets": [
+                    "trait_comparison_chart",
+                    "archetype_distribution"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_11",
+            "objective_id": "obj_03",
+            "question": "What usually stops students from starting conversations with new people on campus?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q19"
+            ],
+            "db_fields": [
+                "ib_fear_rejection",
+                "ib_not_knowing",
+                "ib_formed_groups",
+                "ib_no_topic",
+                "ib_low_energy",
+                "ib_nothing",
+                "ib_other"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_11_a",
+                    "label": "Barrier counts",
+                    "formula_type": "multi_select_count",
+                    "fields": [
+                        "ib_fear_rejection",
+                        "ib_not_knowing",
+                        "ib_formed_groups",
+                        "ib_no_topic",
+                        "ib_low_energy",
+                        "ib_nothing",
+                        "ib_other"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "horizontal_bar_chart",
+                "secondary_widgets": [
+                    "ranked_table"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_12",
+            "objective_id": "obj_03",
+            "question": "How important are fear of rejection, fear of awkwardness, fear of judgment, low energy, and lack of common topics as blockers?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q19",
+                "q15",
+                "q24"
+            ],
+            "db_fields": [
+                "ib_fear_rejection",
+                "ib_not_knowing",
+                "ib_no_topic",
+                "ib_low_energy",
+                "judgment_concern",
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_12_a",
+                    "label": "Barrier salience profile",
+                    "formula_type": "hybrid_barrier_index",
+                    "binary_fields": [
+                        "ib_fear_rejection",
+                        "ib_not_knowing",
+                        "ib_no_topic",
+                        "ib_low_energy"
+                    ],
+                    "scaled_field": "judgment_concern"
+                }
+            ],
+            "ui": {
+                "primary_widget": "combined_bar_and_score_card",
+                "secondary_widgets": [
+                    "theme_chip_list"
+                ]
+            },
+            "limitations": [
+                "Fear of awkwardness is not directly asked as a standalone closed-ended item."
+            ]
+        },
+        {
+            "rq_id": "rq_13",
+            "objective_id": "obj_03",
+            "question": "What makes entering already-formed groups difficult?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q19",
+                "q24"
+            ],
+            "db_fields": [
+                "ib_formed_groups",
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_13_a",
+                    "label": "Existing group barrier prevalence",
+                    "formula_type": "boolean_prevalence",
+                    "field": "ib_formed_groups"
+                },
+                {
+                    "calc_id": "rq_13_b",
+                    "label": "Open text themes on formed groups",
+                    "formula_type": "keyword_theme_extraction",
+                    "field": "social_friction_open",
+                    "keywords_seed": [
+                        "groups",
+                        "already know each other",
+                        "awkward",
+                        "joined",
+                        "left out"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "prevalence_card",
+                "secondary_widgets": [
+                    "theme_list"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_14",
+            "objective_id": "obj_03",
+            "question": "When do students feel most anxious: before initiating, during the first interaction, or after it?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Temporal stage of anxiety is not captured in the current survey."
+            ]
+        },
+        {
+            "rq_id": "rq_15",
+            "objective_id": "obj_03",
+            "question": "How do students describe the emotional cost of making the first move?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q24"
+            ],
+            "db_fields": [
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_15_a",
+                    "label": "Emotional cost themes",
+                    "formula_type": "keyword_theme_extraction",
+                    "field": "social_friction_open",
+                    "keywords_seed": [
+                        "judged",
+                        "awkward",
+                        "fear",
+                        "rejection",
+                        "nervous",
+                        "pressure"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "theme_cluster_panel"
+            },
+            "limitations": [
+                "The survey does not directly ask the phrase emotional cost."
+            ]
+        },
+        {
+            "rq_id": "rq_16",
+            "objective_id": "obj_04",
+            "question": "What kinds of settings make it easier for students to interact: classes, hostels, clubs, shared activities, mutual friends, or online spaces?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q18",
+                "q24"
+            ],
+            "db_fields": [
+                "fs_classes",
+                "fs_hostel",
+                "fs_clubs",
+                "fs_mutual",
+                "fs_online",
+                "fs_other",
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_16_a",
+                    "label": "Friendship formation context percentages",
+                    "formula_type": "multi_select_percentage",
+                    "fields": [
+                        "fs_classes",
+                        "fs_hostel",
+                        "fs_clubs",
+                        "fs_mutual",
+                        "fs_online",
+                        "fs_other"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "ranked_context_bar_chart",
+                "secondary_widgets": [
+                    "context_theme_panel"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_17",
+            "objective_id": "obj_04",
+            "question": "Do students feel more comfortable in small groups, one-on-one interactions, or larger social environments?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Group size preference is not directly asked."
+            ]
+        },
+        {
+            "rq_id": "rq_18",
+            "objective_id": "obj_04",
+            "question": "How important are shared interests, shared goals, or structured prompts in helping conversation begin naturally?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q22",
+                "q24",
+                "q25"
+            ],
+            "db_fields": [
+                "structured_preference",
+                "social_friction_open",
+                "safety_factors"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_18_a",
+                    "label": "Structured interaction preference",
+                    "formula_type": "mean",
+                    "field": "structured_preference"
+                },
+                {
+                    "calc_id": "rq_18_b",
+                    "label": "Shared interest / structure theme prevalence",
+                    "formula_type": "keyword_theme_extraction_dual_field",
+                    "fields": [
+                        "social_friction_open",
+                        "safety_factors"
+                    ],
+                    "keywords_seed": [
+                        "shared interest",
+                        "common interest",
+                        "activity",
+                        "structure",
+                        "topic",
+                        "icebreaker"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "score_plus_theme_panel"
+            },
+            "limitations": [
+                "Shared goals and structured prompts are inferred from open text and preference items."
+            ]
+        },
+        {
+            "rq_id": "rq_19",
+            "objective_id": "obj_04",
+            "question": "Do students prefer interactions that are planned and guided, or those that feel more casual and spontaneous?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q22",
+                "q23"
+            ],
+            "db_fields": [
+                "structured_preference",
+                "spontaneous_value"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_19_a",
+                    "label": "Interaction style preference",
+                    "formula_type": "difference_score",
+                    "field_a": "structured_preference",
+                    "field_b": "spontaneous_value",
+                    "output_labels": {
+                        "positive": "leans_structured",
+                        "negative": "leans_spontaneous",
+                        "zero": "balanced"
+                    }
+                }
+            ],
+            "ui": {
+                "primary_widget": "two_metric_compare_card",
+                "secondary_widgets": [
+                    "balance_distribution"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_20",
+            "objective_id": "obj_04",
+            "question": "What makes an interaction feel low-pressure from the student's point of view?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q22",
+                "q24",
+                "q25"
+            ],
+            "db_fields": [
+                "structured_preference",
+                "social_friction_open",
+                "safety_factors"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_20_a",
+                    "label": "Low-pressure theme extraction",
+                    "formula_type": "keyword_theme_extraction_dual_field",
+                    "fields": [
+                        "social_friction_open",
+                        "safety_factors"
+                    ],
+                    "keywords_seed": [
+                        "safe",
+                        "comfortable",
+                        "small group",
+                        "shared interest",
+                        "structured",
+                        "no judgment",
+                        "natural"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "theme_insight_panel"
+            }
+        },
+        {
+            "rq_id": "rq_21",
+            "objective_id": "obj_05",
+            "question": "What makes a new social interaction feel emotionally safe for students?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q25"
+            ],
+            "db_fields": [
+                "safety_factors"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_21_a",
+                    "label": "Safety factor themes",
+                    "formula_type": "keyword_theme_extraction",
+                    "field": "safety_factors",
+                    "keywords_seed": [
+                        "shared interests",
+                        "small groups",
+                        "structured",
+                        "no judgment",
+                        "mutuals",
+                        "common goals",
+                        "friendly"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "theme_cluster_panel",
+                "secondary_widgets": [
+                    "quote_snippets"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_22",
+            "objective_id": "obj_05",
+            "question": "What makes students worry about being judged in campus social settings?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q15",
+                "q24"
+            ],
+            "db_fields": [
+                "judgment_concern",
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_22_a",
+                    "label": "Judgment concern mean",
+                    "formula_type": "mean",
+                    "field": "judgment_concern"
+                },
+                {
+                    "calc_id": "rq_22_b",
+                    "label": "Judgment-related open text themes",
+                    "formula_type": "keyword_theme_extraction",
+                    "field": "social_friction_open",
+                    "keywords_seed": [
+                        "judged",
+                        "awkward",
+                        "rejected",
+                        "what they think",
+                        "embarrassed"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "score_plus_theme_panel"
+            }
+        },
+        {
+            "rq_id": "rq_23",
+            "objective_id": "obj_05",
+            "question": "Would students prefer some anonymity or softer identity exposure at the beginning of interaction?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Anonymity or identity exposure preference is not directly asked."
+            ]
+        },
+        {
+            "rq_id": "rq_24",
+            "objective_id": "obj_05",
+            "question": "What kind of moderation, filtering, or community norms would make a digital space feel trustworthy?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Moderation and trust rules are not explicitly measured in the survey."
+            ]
+        },
+        {
+            "rq_id": "rq_25",
+            "objective_id": "obj_05",
+            "question": "What would make students feel unsafe, exposed, or pressured in a peer-connection platform?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q24",
+                "q25"
+            ],
+            "db_fields": [
+                "social_friction_open",
+                "safety_factors"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_25_a",
+                    "label": "Unsafe / pressured themes",
+                    "formula_type": "keyword_theme_extraction_dual_field",
+                    "fields": [
+                        "social_friction_open",
+                        "safety_factors"
+                    ],
+                    "keywords_seed": [
+                        "pressure",
+                        "judged",
+                        "forced",
+                        "unsafe",
+                        "awkward",
+                        "large crowd"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "risk_theme_panel"
+            }
+        },
+        {
+            "rq_id": "rq_26",
+            "objective_id": "obj_06",
+            "question": "Do students feel that existing campus social opportunities are too formal, effortful, or intimidating?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q24"
+            ],
+            "db_fields": [
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_26_a",
+                    "label": "Formal / intimidating opportunity themes",
+                    "formula_type": "keyword_theme_extraction",
+                    "field": "social_friction_open",
+                    "keywords_seed": [
+                        "formal",
+                        "effort",
+                        "intimidating",
+                        "pressure",
+                        "events",
+                        "awkward"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "theme_cluster_panel"
+            },
+            "limitations": [
+                "Existing opportunities are not directly rated with a closed-ended scale."
+            ]
+        },
+        {
+            "rq_id": "rq_27",
+            "objective_id": "obj_06",
+            "question": "Do students want more spontaneous ways to meet peers, rather than only events or structured sessions?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q23"
+            ],
+            "db_fields": [
+                "spontaneous_value"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_27_a",
+                    "label": "Spontaneous interaction value mean",
+                    "formula_type": "mean",
+                    "field": "spontaneous_value"
+                },
+                {
+                    "calc_id": "rq_27_b",
+                    "label": "Spontaneous interaction value distribution",
+                    "formula_type": "frequency_distribution",
+                    "field": "spontaneous_value"
+                }
+            ],
+            "ui": {
+                "primary_widget": "single_metric_card",
+                "secondary_widgets": [
+                    "likert_distribution"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_28",
+            "objective_id": "obj_06",
+            "question": "What would a digital bump into each other moment look like in campus life?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "This requires concept-generation or interview data, not current survey data."
+            ]
+        },
+        {
+            "rq_id": "rq_29",
+            "objective_id": "obj_06",
+            "question": "How can a platform help first interactions happen naturally without making them feel forced?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q22",
+                "q23",
+                "q24",
+                "q25"
+            ],
+            "db_fields": [
+                "structured_preference",
+                "spontaneous_value",
+                "social_friction_open",
+                "safety_factors"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_29_a",
+                    "label": "Natural interaction enabling themes",
+                    "formula_type": "keyword_theme_extraction_dual_field",
+                    "fields": [
+                        "social_friction_open",
+                        "safety_factors"
+                    ],
+                    "keywords_seed": [
+                        "natural",
+                        "shared interests",
+                        "activities",
+                        "common goal",
+                        "small group",
+                        "structured"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "design_opportunity_panel"
+            },
+            "limitations": [
+                "Platform features are inferred rather than directly asked."
+            ]
+        },
+        {
+            "rq_id": "rq_30",
+            "objective_id": "obj_06",
+            "question": "Would students engage more with a solution that feels like part of daily life rather than another task or event?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Daily-life integration is not directly measured."
+            ]
+        },
+        {
+            "rq_id": "rq_31",
+            "objective_id": "obj_07",
+            "question": "Would students feel more comfortable initiating contact through a digital layer before interacting in person?",
+            "support_level": "fully_supported",
+            "survey_questions": [
+                "q21"
+            ],
+            "db_fields": [
+                "online_comfort"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_31_a",
+                    "label": "Online-first comfort mean",
+                    "formula_type": "mean",
+                    "field": "online_comfort"
+                },
+                {
+                    "calc_id": "rq_31_b",
+                    "label": "Online-first comfort distribution",
+                    "formula_type": "frequency_distribution",
+                    "field": "online_comfort"
+                }
+            ],
+            "ui": {
+                "primary_widget": "single_metric_card",
+                "secondary_widgets": [
+                    "likert_distribution"
+                ]
+            }
+        },
+        {
+            "rq_id": "rq_32",
+            "objective_id": "obj_07",
+            "question": "Does online-first or text-first interaction reduce the fear of starting a conversation?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q21",
+                "q12",
+                "q13",
+                "q14",
+                "q15"
+            ],
+            "db_fields": [
+                "online_comfort",
+                "initiation_anxiety",
+                "overthinking",
+                "avoidance",
+                "judgment_concern"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_32_a",
+                    "label": "Online comfort vs initiation anxiety correlation",
+                    "formula_type": "correlation",
+                    "field_x": "online_comfort",
+                    "field_y": "initiation_anxiety"
+                },
+                {
+                    "calc_id": "rq_32_b",
+                    "label": "Online comfort vs hesitation index correlation",
+                    "formula_type": "correlation",
+                    "field_x": "online_comfort",
+                    "field_y_composite_fields": [
+                        "initiation_anxiety",
+                        "overthinking",
+                        "avoidance",
+                        "judgment_concern"
+                    ]
+                }
+            ],
+            "ui": {
+                "primary_widget": "scatter_plot",
+                "secondary_widgets": [
+                    "correlation_card"
+                ]
+            },
+            "limitations": [
+                "Text-first specifically is not directly separated from online-first."
+            ]
+        },
+        {
+            "rq_id": "rq_33",
+            "objective_id": "obj_07",
+            "question": "What kind of digital scaffolding would help most: prompts, shared-interest matching, mutual context, icebreakers, or slow conversation formats?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Specific digital scaffolding features are not directly measured."
+            ]
+        },
+        {
+            "rq_id": "rq_34",
+            "objective_id": "obj_07",
+            "question": "At what point should a digital interaction move offline, if at all?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Offline transition timing is not captured."
+            ]
+        },
+        {
+            "rq_id": "rq_35",
+            "objective_id": "obj_07",
+            "question": "What makes digital support feel helpful rather than robotic or repetitive?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Perceptions of digital support quality are not measured."
+            ]
+        },
+        {
+            "rq_id": "rq_36",
+            "objective_id": "obj_08",
+            "question": "Do students believe that easier first interactions would improve their sense of belonging on campus?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q23",
+                "q7",
+                "q20"
+            ],
+            "db_fields": [
+                "spontaneous_value",
+                "belonging",
+                "social_expansion_desire"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_36_a",
+                    "label": "Belonging vs desire for spontaneous interaction correlation",
+                    "formula_type": "correlation",
+                    "field_x": "spontaneous_value",
+                    "field_y": "belonging"
+                }
+            ],
+            "ui": {
+                "primary_widget": "scatter_plot",
+                "secondary_widgets": [
+                    "insight_card"
+                ]
+            },
+            "limitations": [
+                "This is inferential because the survey does not directly ask whether easier first interactions improve belonging."
+            ]
+        },
+        {
+            "rq_id": "rq_37",
+            "objective_id": "obj_08",
+            "question": "What does feeling socially connected actually mean to students in their daily campus life?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q24"
+            ],
+            "db_fields": [
+                "social_friction_open"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_37_a",
+                    "label": "Connectedness themes",
+                    "formula_type": "open_text_semantic_clustering",
+                    "field": "social_friction_open"
+                }
+            ],
+            "ui": {
+                "primary_widget": "theme_cluster_panel"
+            },
+            "limitations": [
+                "Connectedness is not directly defined in a standalone open-ended question."
+            ]
+        },
+        {
+            "rq_id": "rq_38",
+            "objective_id": "obj_08",
+            "question": "What kinds of early interactions are most likely to turn into repeated contact or friendship?",
+            "support_level": "partially_supported",
+            "survey_questions": [
+                "q18",
+                "q11"
+            ],
+            "db_fields": [
+                "fs_classes",
+                "fs_hostel",
+                "fs_clubs",
+                "fs_mutual",
+                "fs_online",
+                "friendship_ease"
+            ],
+            "calculations": [
+                {
+                    "calc_id": "rq_38_a",
+                    "label": "Friendship source vs ease comparison",
+                    "formula_type": "multi_select_vs_numeric_compare",
+                    "binary_fields": [
+                        "fs_classes",
+                        "fs_hostel",
+                        "fs_clubs",
+                        "fs_mutual",
+                        "fs_online"
+                    ],
+                    "numeric_field": "friendship_ease"
+                }
+            ],
+            "ui": {
+                "primary_widget": "source_effect_chart"
+            },
+            "limitations": [
+                "Repeated contact is inferred from friendship formation context, not directly measured longitudinally."
+            ]
+        },
+        {
+            "rq_id": "rq_39",
+            "objective_id": "obj_08",
+            "question": "What would make students continue a connection after the first interaction?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Continuation after first interaction is not directly measured."
+            ]
+        },
+        {
+            "rq_id": "rq_40",
+            "objective_id": "obj_08",
+            "question": "How would students know that a solution is genuinely helping them belong, not just helping them chat once?",
+            "support_level": "not_supported_with_current_survey",
+            "survey_questions": [],
+            "db_fields": [],
+            "calculations": [],
+            "ui": {
+                "primary_widget": "unsupported_notice"
+            },
+            "limitations": [
+                "Success metrics for a future solution are not captured in the survey."
+            ]
+        }
+    ],
+    "dashboard_spec": {
+        "pages": [
+            {
+                "page_id": "dashboard_01",
+                "title": "Overview",
+                "widgets": [
+                    "valid_response_count",
+                    "suspect_response_count",
+                    "avg_completion_time",
+                    "social_initiation_gap_index",
+                    "initiation_anxiety_index",
+                    "belonging_risk_index"
+                ]
+            },
+            {
+                "page_id": "dashboard_02",
+                "title": "Core Problem Validation",
+                "widgets": [
+                    "rq_01",
+                    "rq_02",
+                    "rq_03",
+                    "rq_04",
+                    "rq_05"
+                ]
+            },
+            {
+                "page_id": "dashboard_03",
+                "title": "Primary User & Segments",
+                "widgets": [
+                    "rq_06",
+                    "rq_07",
+                    "rq_08",
+                    "rq_09",
+                    "rq_10"
+                ]
+            },
+            {
+                "page_id": "dashboard_04",
+                "title": "Initiation Barriers",
+                "widgets": [
+                    "rq_11",
+                    "rq_12",
+                    "rq_13",
+                    "rq_14",
+                    "rq_15"
+                ]
+            },
+            {
+                "page_id": "dashboard_05",
+                "title": "Interaction Context & Preferences",
+                "widgets": [
+                    "rq_16",
+                    "rq_17",
+                    "rq_18",
+                    "rq_19",
+                    "rq_20"
+                ]
+            },
+            {
+                "page_id": "dashboard_06",
+                "title": "Safety & Trust",
+                "widgets": [
+                    "rq_21",
+                    "rq_22",
+                    "rq_23",
+                    "rq_24",
+                    "rq_25"
+                ]
+            },
+            {
+                "page_id": "dashboard_07",
+                "title": "Spontaneity & Opportunity Design",
+                "widgets": [
+                    "rq_26",
+                    "rq_27",
+                    "rq_28",
+                    "rq_29",
+                    "rq_30"
+                ]
+            },
+            {
+                "page_id": "dashboard_08",
+                "title": "Digital Layer & Belonging",
+                "widgets": [
+                    "rq_31",
+                    "rq_32",
+                    "rq_33",
+                    "rq_34",
+                    "rq_35",
+                    "rq_36",
+                    "rq_37",
+                    "rq_38",
+                    "rq_39",
+                    "rq_40"
+                ]
+            }
+        ],
+        "global_filters": [
+            "exclude_suspect_submissions",
+            "year_of_study",
+            "residence",
+            "program",
+            "gender",
+            "archetype"
+        ]
+    },
+    "formula_definitions": {
+        "mean": "Average of one numeric field across filtered valid responses.",
+        "composite_mean": "Average of multiple numeric fields within each response, then average across responses.",
+        "composite_mean_with_reverse_code": "Reverse selected fields using reversed_value = scale_max + scale_min - original_value, then compute composite mean.",
+        "frequency_distribution": "Count and percentage per category or Likert option.",
+        "group_mean_compare": "Compute mean of a value field grouped by one categorical field.",
+        "group_composite_mean": "Compute composite mean grouped by one categorical field.",
+        "correlation": "Pearson or Spearman correlation between two numeric variables or a numeric variable and a composite score.",
+        "difference_score": "Subtract field_b from field_a to determine leaning or preference balance.",
+        "rule_based_segmentation": "Assign derived segment labels based on boolean conditions.",
+        "multi_select_count": "Count how many respondents selected each boolean multi-select option.",
+        "multi_select_percentage": "Percentage of respondents selecting each boolean multi-select option.",
+        "boolean_prevalence": "Percentage of valid responses where boolean field is true.",
+        "hybrid_barrier_index": "Combines counts from barrier checkboxes and mean from related scaled item.",
+        "keyword_theme_extraction": "Simple NLP keyword frequency and clustering from one open-text field.",
+        "keyword_theme_extraction_dual_field": "Simple NLP keyword frequency and clustering across two open-text fields.",
+        "open_text_semantic_clustering": "Embeddings or rule-based clustering of open-text responses into themes.",
+        "multi_select_vs_numeric_compare": "Compares numeric outcome across respondents who selected vs did not select each multi-select option."
+    },
+    "ui_component_library": {
+        "kpi_triplet": "Three side-by-side metric cards.",
+        "stacked_bar": "Stacked bar chart for grouped proportions.",
+        "distribution_histogram": "Histogram or Likert bar distribution.",
+        "radar_chart": "Radar chart comparing multiple mean psychological variables.",
+        "likert_distribution": "Diverging stacked bar for Likert responses.",
+        "heatmap": "Matrix heatmap by field and average score.",
+        "grouped_bar_chart": "Side-by-side grouped means.",
+        "scatter_plot": "Scatter plot with optional regression line.",
+        "correlation_card": "Card showing coefficient and direction.",
+        "segment_pie_chart": "Pie or donut for rule-based segments.",
+        "segment_table": "Table listing derived segment counts and percentages.",
+        "summary_score_card": "Large score tile with benchmark range.",
+        "traffic_light_panel": "Low/medium/high signal panel.",
+        "segmented_bar_chart": "Bar chart by demographic segment.",
+        "cross_tab_table": "Cross-tabulation table with counts and means.",
+        "segment_cards": "Cards for derived personas or proxy profiles.",
+        "profile_comparison_table": "Comparison table of segment metrics.",
+        "line_or_bar_chart": "Configurable chart for friend-group comparison.",
+        "horizontal_bar_chart": "Ranked horizontal bars.",
+        "ranked_table": "Sorted table for barriers or contexts.",
+        "combined_bar_and_score_card": "Bar chart plus a headline score.",
+        "theme_chip_list": "Tag-like display of top extracted themes.",
+        "prevalence_card": "Single prevalence card with percentage.",
+        "theme_list": "Ordered list of top open-text themes.",
+        "theme_cluster_panel": "Clustered theme visualization with optional quote examples.",
+        "ranked_context_bar_chart": "Bar chart of friendship context percentages.",
+        "context_theme_panel": "Open-text themes associated with contexts.",
+        "two_metric_compare_card": "Dual metric compare panel.",
+        "balance_distribution": "Distribution of leaned_structured vs leaned_spontaneous vs balanced.",
+        "theme_insight_panel": "Theme panel with summary sentence.",
+        "score_plus_theme_panel": "Mean score plus open-text themes.",
+        "quote_snippets": "Selected anonymized open-text response snippets.",
+        "risk_theme_panel": "Theme cluster emphasizing unsafe/pressured conditions.",
+        "single_metric_card": "Single key metric card.",
+        "design_opportunity_panel": "Insight panel turning themes into design opportunities.",
+        "source_effect_chart": "Source-wise numeric comparison chart.",
+        "persona_summary_panel": "Persona/primary user summary with core stats.",
+        "trait_comparison_chart": "Trait/archetype comparison visualization.",
+        "archetype_distribution": "Chart for archetype counts.",
+        "unsupported_notice": "UI block that states current survey does not support answering this question directly."
+    },
+    "implementation_notes": {
+        "validity_rules": [
+            "Default dashboard filter should exclude suspect_submission = true.",
+            "All open-text analysis should anonymize text and avoid exposing identifiers.",
+            "If valid sample size for a subgroup is below 3, suppress detailed subgroup charts."
+        ],
+        "naming_rules": [
+            "Use rq_id as the backend key for each analysis card.",
+            "Use calc_id as the backend key for each computed metric."
+        ],
+        "recommended_backend_outputs": [
+            "summary_metrics",
+            "distribution_data",
+            "correlation_results",
+            "segment_results",
+            "theme_results",
+            "unsupported_rq_list"
+        ]
+    }
+};
