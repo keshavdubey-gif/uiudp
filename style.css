@@ -72,6 +72,11 @@
     --trans-fast: 0.15s var(--ease);
     --trans-med: 0.28s var(--ease);
     --trans-slow: 0.45s var(--spring);
+
+    /* System Aliases */
+    --system-blue: var(--blue);
+    --system-green: var(--green);
+    --system-red: var(--red);
 }
 
 /* ── Reset ── */
