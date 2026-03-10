@@ -111,27 +111,18 @@ const SURVEY_PLAN = {
             { id: 'not_really', label: 'Not really' },
             { id: 'prefer_known_people', label: 'I usually prefer staying with people I already know' }
         ],
-        next: (ans) => (ans === 'not_really' || ans === 'prefer_known_people') ? 'q1a' : 'q2'
+        next: (ans) => (ans === 'not_really' || ans === 'prefer_known_people') ? 'thank_you_exit' : 'q2'
     },
-    q1a: {
-        section: 'Section A — Screening',
-        title: 'Which of the following best explains your answer?',
-        type: 'multi_select',
-        options: [
-            { id: 'do_not_feel_need', label: 'I do not usually feel the need to meet new people' },
-            { id: 'difficult_to_start', label: 'I find it difficult to start conversations' },
-            { id: 'comfortable_with_familiar', label: 'I feel more comfortable with familiar people' },
-            { id: 'prefer_small_selective_circles', label: 'I prefer smaller or selective social circles' },
-            { id: 'unsure_what_to_say', label: 'I am unsure what to say' },
-            { id: 'other', label: 'Other' }
-        ],
-        next: () => 'q1b'
-    },
-    q1b: {
-        section: 'Section A — Screening',
-        title: 'In situations where you do end up talking to someone new, what usually makes that happen?',
-        type: 'short_text',
-        next: () => 'q2'
+    thank_you_exit: {
+        section: 'Exit',
+        title: 'Thank you for your time!',
+        type: 'info',
+        text: `We appreciate your interest in our research. 
+               <br><br>
+               At the moment, our study is specifically focusing on students who are actively seeking to build or understand their social connections on campus. 
+               <br><br>
+               Since you indicated you're comfortable with your current circle, you do not need to continue with this particular survey. Thank you for helping us narrow our research focus!`,
+        next: null
     },
 
     // ── SECTION B: Recent real interaction ──
@@ -196,41 +187,22 @@ const SURVEY_PLAN = {
             const val = parseInt(ans);
             if (val <= 2) return 'q2e';
             if (val >= 4) return 'q2f';
-            return 'q3';
+            return 'q4';
         }
     },
     q2e: {
         section: 'Section B — Recent real interaction',
         title: 'What made that interaction uncomfortable?',
         type: 'long_text',
-        next: () => 'q3'
+        next: () => 'q4'
     },
     q2f: {
         section: 'Section B — Recent real interaction',
         title: 'What made that interaction feel comfortable or easy?',
         type: 'long_text',
-        next: () => 'q3'
-    },
-
-    // ── SECTION C: Contexts and natural interaction ──
-    q3: {
-        section: 'Section C — Contexts and natural interaction',
-        title: 'In what situations do you usually end up talking to new people?',
-        type: 'multi_select',
-        options: [
-            { id: 'classes', label: 'Classes' },
-            { id: 'group_assignments', label: 'Group assignments' },
-            { id: 'clubs', label: 'Clubs or societies' },
-            { id: 'events', label: 'Events' },
-            { id: 'mutual_friends', label: 'Mutual friends' },
-            { id: 'shared_hobbies', label: 'Shared hobbies or activities' },
-            { id: 'hostel_common_spaces', label: 'Hostel/common spaces' },
-            { id: 'online_communities', label: 'Online communities' },
-            { id: 'usually_do_not', label: 'I usually do not talk to new people' },
-            { id: 'other', label: 'Other' }
-        ],
         next: () => 'q4'
     },
+
     q4: {
         section: 'Section C — Contexts and natural interaction',
         title: 'Are there situations where talking to new people feels easier or more natural for you?',
@@ -240,7 +212,7 @@ const SURVEY_PLAN = {
             { id: 'sometimes', label: 'Sometimes' },
             { id: 'no', label: 'No' }
         ],
-        next: (ans) => (ans === 'yes' || ans === 'sometimes') ? 'q4a' : 'q4c'
+        next: (ans) => (ans === 'yes' || ans === 'sometimes') ? 'q4a' : 'q5'
     },
     q4a: {
         section: 'Section C — Contexts and natural interaction',
@@ -261,12 +233,6 @@ const SURVEY_PLAN = {
     q4b: {
         section: 'Section C — Contexts and natural interaction',
         title: 'Why do these situations feel easier?',
-        type: 'long_text',
-        next: () => 'q5'
-    },
-    q4c: {
-        section: 'Section C — Contexts and natural interaction',
-        title: 'What usually makes interacting feel difficult even in social settings?',
         type: 'long_text',
         next: () => 'q5'
     },
@@ -318,24 +284,6 @@ const SURVEY_PLAN = {
         section: 'Section D — Barriers and motivation',
         title: 'What usually motivates you to talk to someone you do not know yet?',
         type: 'multi_select',
-        options: [
-            { id: 'shared_interest', label: 'Shared interest' },
-            { id: 'academic_reason', label: 'Academic or practical reason' },
-            { id: 'mutual_friend', label: 'Mutual friend' },
-            { id: 'curiosity', label: 'Curiosity' },
-            { id: 'need_for_company', label: 'Need for company' },
-            { id: 'networking', label: 'Networking' },
-            { id: 'group_activity', label: 'Group activity' },
-            { id: 'approachable', label: 'They seem approachable' },
-            { id: 'other', label: 'Other' }
-        ],
-        next: () => 'q6a'
-    },
-    q6a: {
-        section: 'Section D — Barriers and motivation',
-        title: 'Which one is usually the strongest reason?',
-        type: 'single_select',
-        // Generates from q6 dynamically in the renderer or we show full list. Let's just use the full list as fallback.
         options: [
             { id: 'shared_interest', label: 'Shared interest' },
             { id: 'academic_reason', label: 'Academic or practical reason' },
@@ -728,13 +676,9 @@ function goNext(qId) {
             alert('Please acknowledge and agree to continue.');
             return;
         }
-    } else if (node.type !== 'info') {
-        const val = responses[qId];
-        if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
-            alert('Please provide an answer to continue.');
-            return;
-        }
     }
+    // Questions are now optional per user request. 
+    // Users can click "Continue" without selecting an answer.
 
     const nextId = node.next(responses[qId]);
     if (nextId === 'complete') {
