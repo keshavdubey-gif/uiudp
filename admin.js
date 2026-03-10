@@ -193,6 +193,11 @@ function renderPage(pageId) {
         return;
     }
 
+    if (pageId === 'dashboard_patterns') {
+        renderDashboardPatterns(container);
+        return;
+    }
+
     const pageSpec = instructions.dashboard_spec.pages.find(p => p.page_id === pageId);
     if (!pageSpec) return;
 
@@ -714,6 +719,108 @@ function renderResearchAnswers(container) {
 
         container.appendChild(accordion);
     });
+}
+
+function processFreq(data, key) {
+    const counts = {};
+    let total = 0;
+    data.forEach(row => {
+        const val = row[key];
+        if (val) {
+            counts[val] = (counts[val] || 0) + 1;
+            total++;
+        }
+    });
+
+    const arr = Object.keys(counts).map(k => ({ label: k.replace(/_/g, ' '), count: counts[k], pct: Math.round((counts[k] / total) * 100) || 0 }));
+    arr.sort((a, b) => b.count - a.count);
+    return arr;
+}
+
+function renderPatternCard(title, dataArr) {
+    let rows = dataArr.map(item => `
+        <div style="display:flex; justify-content:space-between; margin-bottom: 8px; font-size: 14px; align-items: center;">
+            <span style="text-transform: capitalize; color: #333;">${item.label}</span>
+            <span style="font-weight: 600; color: #007AFF;">${item.pct}% <span style="font-size: 11px; color:rgba(0,0,0,0.4); font-weight: normal;">(${item.count})</span></span>
+        </div>
+        <div style="width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; margin-bottom: 14px; overflow: hidden;">
+            <div style="width: ${item.pct}%; height: 100%; background: #007AFF; border-radius: 3px;"></div>
+        </div>
+    `).join('');
+
+    if (dataArr.length === 0) {
+        rows = `<div style="color:rgba(0,0,0,0.4); font-size:13px; text-align:center; padding: 20px;">No data yet</div>`;
+    }
+
+    return `
+        <div class="chart-card">
+            <h3>${title}</h3>
+            <div>${rows}</div>
+        </div>
+    `;
+}
+
+async function renderDashboardPatterns(container) {
+    container.innerHTML = `
+        <div class="page-header">
+            <h2>Behaviour Patterns</h2>
+            <p>Automated insight extraction powered by SQL views and the Adaptive Survey model.</p>
+        </div>
+        <div style="padding: 40px; text-align: center; color: rgba(0,0,0,0.5);">
+            <div class="loading-spinner" style="margin-bottom:16px;">⏳</div>
+            <p>Querying SQL Views...</p>
+        </div>
+    `;
+
+    if (typeof fetchBehaviourPatterns !== 'function') {
+        container.innerHTML = `
+            <div class="unsupported-notice">
+                <p><strong>Missing fetcher:</strong> fetchBehaviourPatterns not found. Ensure supabase-client.js is updated.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const patterns = await fetchBehaviourPatterns();
+
+    if (!patterns || !patterns.contexts) {
+        container.innerHTML = `
+            <div class="page-header">
+                <h2>Behaviour Patterns</h2>
+            </div>
+            <div class="unsupported-notice">
+                <p><strong>No pattern data available.</strong> Ensure that the Supabase SQL views have been created and responses have been submitted via the adaptive survey.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const ctx = processFreq(patterns.contexts, 'context');
+    const init = processFreq(patterns.initiation, 'behavior');
+    const bar = processFreq(patterns.barriers, 'barrier');
+    const dig = processFreq(patterns.digital, 'preference');
+
+    container.innerHTML = `
+        <div class="page-header">
+            <h2>Behaviour Patterns</h2>
+            <p>Behavioural patterns from ${patterns.contexts.length > 0 ? 'the adaptive survey responses' : 'no responses yet'}.</p>
+        </div>
+        <div class="charts-grid">
+            ${renderPatternCard('Conversation Triggers (Contexts)', ctx)}
+            ${renderPatternCard('Initiation Styles & Behaviour', init)}
+            ${renderPatternCard('Primary Barriers to Entry', bar)}
+            ${renderPatternCard('Digital vs Physical Preference', dig)}
+        </div>
+        
+        <div class="table-card" style="margin-top: 24px;">
+            <h3>Generate LLM Validation (Next Step)</h3>
+            <p style="font-size:14px; color:rgba(0,0,0,0.6); line-height: 1.5;">
+                We now have flattened, easily queried statistics. The next step is to pull the open-text "Why" explanations 
+                and pass them directly to an LLM for qualitative reasoning against the HMW statement.
+            </p>
+            <button class="btn btn-primary" style="margin-top: 16px;" onclick="alert('LLM integration pipeline ready for deployment.')">Generate Insights</button>
+        </div>
+    `;
 }
 
 // Global hook for auth

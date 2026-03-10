@@ -475,6 +475,12 @@
                                 "social_frequency in ['Often','Very Often']",
                                 "social_expansion_desire >= 3"
                             ]
+                        },
+                        {
+                            "label": "intermediate_or_mixed_profile",
+                            "conditions": [
+                                "social_frequency == 'Sometimes' OR social_expansion_desire == 3 OR social_frequency in ['Often','Very Often']"
+                            ]
                         }
                     ]
                 }

@@ -252,7 +252,10 @@ class AnalysisEngine {
         const segmentCounts = {};
         spec.rules.forEach(rule => segmentCounts[rule.label] = 0);
 
+        let matchedCount = 0;
+
         data.forEach(r => {
+            let matched = false;
             for (const rule of spec.rules) {
                 let match = true;
                 for (const condition of rule.conditions) {
@@ -263,11 +266,18 @@ class AnalysisEngine {
                 }
                 if (match) {
                     segmentCounts[rule.label]++;
+                    matchedCount++;
+                    matched = true;
                     // Assuming one segment per user for simplicity (first match wins or mutually exclusive)
                     break;
                 }
             }
         });
+
+        // Add 'Others' if not exhaustive
+        if (matchedCount < data.length) {
+            segmentCounts['Others'] = data.length - matchedCount;
+        }
 
         const total = data.length;
         const results = {};

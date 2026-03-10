@@ -161,6 +161,121 @@ function sanitiseForDB(record) {
     };
 }
 
+/**
+ * Saves adaptive survey responses to the JSON event log (from new adaptive survey model).
+ */
+async function saveAdaptiveToSupabase(responses) {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    // Calculate completion time
+    const completed_at = Date.now();
+    const started_at = responses.started_at || completed_at;
+    const completion_time_seconds = Math.round((completed_at - started_at) / 1000);
+
+    // Extract demographics
+    const age_group = responses.d1 || null;
+    const year_of_study = responses.d2 || null;
+    const program = responses.d3 || null;
+    const gender = responses.d4 || null;
+    const residence = responses.d5 || null;
+
+    // Clean payload of started_at, demographics, and timestamps so "answers" is just questions
+    const cleanResponses = { ...responses };
+    const timestamps = cleanResponses.timestamps || {};
+    delete cleanResponses.started_at;
+    delete cleanResponses.timestamps;
+    delete cleanResponses.d1;
+    delete cleanResponses.d2;
+    delete cleanResponses.d3;
+    delete cleanResponses.d4;
+    delete cleanResponses.d5;
+    const computedProfile = cleanResponses.computed_profile || null;
+    delete cleanResponses.computed_profile;
+
+    // We use a structured JSON log for the MVP of the adaptive survey
+    const jsonPayload = {
+        survey_session_id: 'sess_' + Math.random().toString(36).substr(2, 9),
+        respondent_id: 'anon_' + Math.random().toString(36).substr(2, 9),
+        computed_profile: computedProfile,
+        answers: Object.keys(cleanResponses).map(key => {
+            const planDef = typeof SURVEY_PLAN !== 'undefined' ? SURVEY_PLAN[key] : null;
+            const qType = planDef ? planDef.type : 'unknown';
+            let ansValue = cleanResponses[key];
+
+            // Cast numeric scale responses to integer
+            if (qType === 'scale') {
+                ansValue = Number(ansValue);
+            }
+
+            const ansTimestamp = timestamps[key] || null;
+
+            return {
+                question_code: key.toUpperCase(),
+                type: qType,
+                answer: ansValue,
+                answered_at: ansTimestamp
+            };
+        })
+    };
+
+    const dbRow = {
+        payload: jsonPayload,
+        age_group,
+        year_of_study,
+        program,
+        gender,
+        residence,
+        completion_time_seconds
+    };
+
+    console.log('[Supabase] Preparing to save adaptive record:', dbRow);
+
+    try {
+        const { data, error } = await sb
+            .from('survey_events_json')
+            .insert([dbRow])
+            .select();
+
+        if (error) {
+            console.error('[Supabase] Insert error for adaptive survey:', error);
+            throw error;
+        }
+        console.log('[Supabase] Success: Saved adaptive response tracking event', data);
+        return data && data[0] ? data[0] : true;
+    } catch (err) {
+        console.error('[Supabase] Adaptive save failed:', err);
+        throw err;
+    }
+}
+
+/**
+ * Updates a survey result with user alignment feedback
+ */
+async function updateFeedbackInSupabase(recordId, feedback) {
+    const sb = getSupabase();
+    if (!sb || !recordId) return;
+
+    try {
+        const { error } = await sb
+            .from('survey_events_json')
+            .update({
+                feedback_rating: feedback.rating,
+                feedback_relatable: feedback.relatable,
+                feedback_relevant: feedback.relevant,
+                feedback_comment: feedback.comment || ''
+            })
+            .eq('id', recordId);
+
+        if (error) throw error;
+        console.log('[Supabase] Feedback recorded for record:', recordId);
+        return true;
+    } catch (err) {
+        console.error('[Supabase] Feedback update failed:', err);
+        return false;
+    }
+}
+
 /* ═══════════════════════════════════════════════════════
     FETCHING LOGIC (For Admin Dashboard)
  ═══════════════════════════════════════════════════════ */
@@ -182,6 +297,38 @@ async function fetchFromSupabase() {
         return data;
     } catch (err) {
         console.error('[Supabase] Fetch failed:', err);
+        return null;
+    }
+}
+
+/**
+ * Fetches behavioral pattern aggregates directly from the SQL views
+ */
+async function fetchBehaviourPatterns() {
+    const sb = getSupabase();
+    if (!sb) return null;
+
+    try {
+        const [contextsRes, initiationRes, barriersRes, digitalRes] = await Promise.all([
+            sb.from('interaction_contexts').select('*'),
+            sb.from('initiation_style').select('*'),
+            sb.from('barriers_to_entry').select('*'),
+            sb.from('digital_preference').select('*')
+        ]);
+
+        if (contextsRes.error) throw contextsRes.error;
+        if (initiationRes.error) throw initiationRes.error;
+        if (barriersRes.error) throw barriersRes.error;
+        if (digitalRes.error) throw digitalRes.error;
+
+        return {
+            contexts: contextsRes.data,
+            initiation: initiationRes.data,
+            barriers: barriersRes.data,
+            digital: digitalRes.data
+        };
+    } catch (err) {
+        console.error('[Supabase] Failed to fetch behaviour patterns:', err);
         return null;
     }
 }

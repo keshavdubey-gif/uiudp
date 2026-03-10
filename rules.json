@@ -1,0 +1,746 @@
+{
+    "traits": [
+        "social_openness",
+        "initiation_confidence",
+        "low_pressure_preference",
+        "shared_context_reliance",
+        "digital_comfort"
+    ],
+    "scoring_formula": "Trait Score = (User Points / Maximum Possible Points for that Trait) * 100",
+    "multi_select_rule": {
+        "description": "For multi-select questions, sum selected option points but cap contribution per question so one question does not overpower scoring",
+        "rules": {
+            "single_select": "one score contribution",
+            "multi_select": "sum selected points capped at question max",
+            "scale": "map directly to points"
+        }
+    },
+    "questions": {
+        "Q1": {
+            "question": "Do you generally like interacting with new people on campus?",
+            "traits_affected": [
+                "social_openness",
+                "initiation_confidence"
+            ],
+            "answers": {
+                "yes": {
+                    "social_openness": 3,
+                    "initiation_confidence": 2
+                },
+                "sometimes": {
+                    "social_openness": 2,
+                    "initiation_confidence": 1
+                },
+                "not_really": {
+                    "social_openness": 0,
+                    "initiation_confidence": 0
+                },
+                "prefer_known_people": {
+                    "social_openness": 1,
+                    "initiation_confidence": 0
+                }
+            }
+        },
+        "Q1A": {
+            "question": "Which best explains your answer?",
+            "traits_affected": [
+                "low_pressure_preference",
+                "shared_context_reliance",
+                "initiation_confidence"
+            ],
+            "answers": {
+                "do_not_feel_need": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                },
+                "difficult_to_start": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                },
+                "comfortable_with_familiar": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                },
+                "prefer_small_selective_circles": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                },
+                "unsure_what_to_say": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                },
+                "other": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                }
+            },
+            "cap": {
+                "low_pressure_preference": 3
+            },
+            "note": "Initiation confidence effect here should remain indirect for cleaner scoring"
+        },
+        "Q1B": {
+            "question": "In situations where you do end up talking, what makes that happen?",
+            "type": "open_text",
+            "scoring": "Do not score directly unless tagged using NLP later"
+        },
+        "Q2A": {
+            "question": "Where did the last interaction happen?",
+            "traits_affected": [
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "class": {
+                    "shared_context_reliance": 2
+                },
+                "group_assignment": {
+                    "shared_context_reliance": 3
+                },
+                "club": {
+                    "shared_context_reliance": 2
+                },
+                "event": {
+                    "shared_context_reliance": 1
+                },
+                "mutual_friend": {
+                    "shared_context_reliance": 2
+                },
+                "hostel_common_area": {
+                    "shared_context_reliance": 1
+                },
+                "online_community": {
+                    "shared_context_reliance": 1
+                },
+                "other": {
+                    "shared_context_reliance": 0
+                }
+            }
+        },
+        "Q2B": {
+            "question": "What started the conversation?",
+            "traits_affected": [
+                "shared_context_reliance",
+                "initiation_confidence"
+            ],
+            "answers": {
+                "shared_task": {
+                    "shared_context_reliance": 3,
+                    "initiation_confidence": 0
+                },
+                "academic_need": {
+                    "shared_context_reliance": 2,
+                    "initiation_confidence": 0
+                },
+                "shared_interest": {
+                    "shared_context_reliance": 2,
+                    "initiation_confidence": 0
+                },
+                "they_approached": {
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                },
+                "i_approached": {
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 3
+                },
+                "mutual_friend_introduced": {
+                    "shared_context_reliance": 1,
+                    "initiation_confidence": 0
+                },
+                "casual_moment": {
+                    "shared_context_reliance": 1,
+                    "initiation_confidence": 1
+                },
+                "other": {
+                    "shared_context_reliance": 0,
+                    "initiation_confidence": 0
+                }
+            },
+            "cap": {
+                "shared_context_reliance": 4,
+                "initiation_confidence": 3
+            }
+        },
+        "Q2C": {
+            "question": "Who initiated the conversation?",
+            "traits_affected": [
+                "initiation_confidence"
+            ],
+            "answers": {
+                "me": {
+                    "initiation_confidence": 4
+                },
+                "them": {
+                    "initiation_confidence": 1
+                },
+                "both_naturally": {
+                    "initiation_confidence": 3
+                },
+                "dont_remember": {
+                    "initiation_confidence": 1
+                }
+            }
+        },
+        "Q2D": {
+            "question": "How comfortable did that interaction feel?",
+            "scale": "1-5",
+            "traits_affected": [
+                "initiation_confidence",
+                "low_pressure_preference"
+            ],
+            "mapping": {
+                "1": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 3
+                },
+                "2": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 2
+                },
+                "3": {
+                    "initiation_confidence": 2,
+                    "low_pressure_preference": 1
+                },
+                "4": {
+                    "initiation_confidence": 3,
+                    "low_pressure_preference": 0
+                },
+                "5": {
+                    "initiation_confidence": 4,
+                    "low_pressure_preference": 0
+                }
+            },
+            "interpretation": {
+                "low_comfort": "suggests stronger need for safer environments",
+                "high_comfort": "suggests stronger initiation confidence"
+            }
+        },
+        "Q2E": {
+            "type": "open_text",
+            "scoring": "qualitative only"
+        },
+        "Q2F": {
+            "type": "open_text",
+            "scoring": "qualitative only"
+        },
+        "Q3": {
+            "question": "In what situations do you usually end up talking to new people?",
+            "traits_affected": [
+                "social_openness",
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "classes": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 2
+                },
+                "group_assignments": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 3
+                },
+                "clubs": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 2
+                },
+                "events": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 1
+                },
+                "mutual_friends": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 2
+                },
+                "shared_hobbies": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 2
+                },
+                "hostel_common_spaces": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 1
+                },
+                "online_communities": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 1
+                },
+                "usually_do_not": {
+                    "social_openness": 0,
+                    "shared_context_reliance": 0
+                },
+                "other": {
+                    "social_openness": 0,
+                    "shared_context_reliance": 0
+                }
+            },
+            "cap": {
+                "social_openness": 4,
+                "shared_context_reliance": 5
+            }
+        },
+        "Q4": {
+            "question": "Are there situations where talking feels easier?",
+            "traits_affected": [
+                "low_pressure_preference",
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "yes": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 1
+                },
+                "sometimes": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 1
+                },
+                "no": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 0
+                }
+            }
+        },
+        "Q4A": {
+            "question": "Which situations feel easier?",
+            "traits_affected": [
+                "low_pressure_preference",
+                "shared_context_reliance",
+                "digital_comfort"
+            ],
+            "answers": {
+                "shared_activities": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 3,
+                    "digital_comfort": 0
+                },
+                "small_groups": {
+                    "low_pressure_preference": 3,
+                    "shared_context_reliance": 0,
+                    "digital_comfort": 0
+                },
+                "one_on_one": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0,
+                    "digital_comfort": 0
+                },
+                "informal_casual": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0,
+                    "digital_comfort": 0
+                },
+                "someone_else_starts": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0,
+                    "digital_comfort": 0
+                },
+                "online_interactions": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0,
+                    "digital_comfort": 3
+                },
+                "common_interest": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 2,
+                    "digital_comfort": 0
+                },
+                "other": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 0,
+                    "digital_comfort": 0
+                }
+            },
+            "cap": {
+                "low_pressure_preference": 5,
+                "shared_context_reliance": 4,
+                "digital_comfort": 3
+            }
+        },
+        "Q5": {
+            "question": "Are there situations where you avoid starting a conversation?",
+            "traits_affected": [
+                "initiation_confidence",
+                "low_pressure_preference"
+            ],
+            "answers": {
+                "yes": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 2
+                },
+                "sometimes": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 1
+                },
+                "no": {
+                    "initiation_confidence": 3,
+                    "low_pressure_preference": 0
+                }
+            }
+        },
+        "Q5A": {
+            "question": "What makes those situations difficult?",
+            "traits_affected": [
+                "low_pressure_preference",
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "people_in_groups": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 2
+                },
+                "dont_know_how_to_start": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0
+                },
+                "worry_about_judgment": {
+                    "low_pressure_preference": 3,
+                    "shared_context_reliance": 0
+                },
+                "no_reason_to_talk": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 3
+                },
+                "too_formal": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0
+                },
+                "too_public": {
+                    "low_pressure_preference": 3,
+                    "shared_context_reliance": 0
+                },
+                "may_not_be_interested": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 0
+                },
+                "other": {
+                    "low_pressure_preference": 0,
+                    "shared_context_reliance": 0
+                }
+            },
+            "cap": {
+                "low_pressure_preference": 5,
+                "shared_context_reliance": 3
+            }
+        },
+        "Q5B": {
+            "question": "What do you usually do instead?",
+            "traits_affected": [
+                "initiation_confidence",
+                "low_pressure_preference"
+            ],
+            "answers": {
+                "wait_for_someone": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 2
+                },
+                "observe": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 3
+                },
+                "talk_only_if_needed": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 1
+                },
+                "leave": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 2
+                },
+                "stick_to_known_people": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 1
+                },
+                "use_phone_avoid": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 1
+                },
+                "other": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 0
+                }
+            },
+            "cap": {
+                "initiation_confidence": 2,
+                "low_pressure_preference": 4
+            }
+        },
+        "Q6": {
+            "question": "What usually motivates you to talk to someone new?",
+            "traits_affected": [
+                "social_openness",
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "shared_interest": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 2
+                },
+                "academic_reason": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 2
+                },
+                "mutual_friend": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 1
+                },
+                "curiosity": {
+                    "social_openness": 3,
+                    "shared_context_reliance": 0
+                },
+                "need_for_company": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 0
+                },
+                "networking": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 0
+                },
+                "group_activity": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 3
+                },
+                "approachable": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 0
+                },
+                "other": {
+                    "social_openness": 0,
+                    "shared_context_reliance": 0
+                }
+            },
+            "cap": {
+                "social_openness": 4,
+                "shared_context_reliance": 4
+            }
+        },
+        "Q6A": {
+            "question": "Strongest reason",
+            "traits_affected": [
+                "social_openness",
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "shared_interest": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 2
+                },
+                "academic_reason": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 2
+                },
+                "mutual_friend": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 1
+                },
+                "curiosity": {
+                    "social_openness": 3,
+                    "shared_context_reliance": 0
+                },
+                "need_for_company": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 0
+                },
+                "networking": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 0
+                },
+                "group_activity": {
+                    "social_openness": 1,
+                    "shared_context_reliance": 3
+                },
+                "approachable": {
+                    "social_openness": 2,
+                    "shared_context_reliance": 0
+                }
+            }
+        },
+        "Q7": {
+            "question": "When you join a new group/event, how do you behave?",
+            "traits_affected": [
+                "initiation_confidence",
+                "low_pressure_preference",
+                "social_openness"
+            ],
+            "answers": {
+                "start_quickly": {
+                    "initiation_confidence": 4,
+                    "low_pressure_preference": 0,
+                    "social_openness": 3
+                },
+                "clear_reason": {
+                    "initiation_confidence": 2,
+                    "low_pressure_preference": 0,
+                    "social_openness": 2
+                },
+                "wait_for_someone": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 2,
+                    "social_openness": 1
+                },
+                "observe_first": {
+                    "initiation_confidence": 1,
+                    "low_pressure_preference": 3,
+                    "social_openness": 1
+                },
+                "avoid_interacting": {
+                    "initiation_confidence": 0,
+                    "low_pressure_preference": 2,
+                    "social_openness": 0
+                }
+            }
+        },
+        "Q8": {
+            "question": "Easier one-on-one or group activity?",
+            "traits_affected": [
+                "low_pressure_preference",
+                "shared_context_reliance"
+            ],
+            "answers": {
+                "one_on_one": {
+                    "low_pressure_preference": 3,
+                    "shared_context_reliance": 0
+                },
+                "group_activity": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 3
+                },
+                "depends": {
+                    "low_pressure_preference": 1,
+                    "shared_context_reliance": 1
+                },
+                "neither_easy": {
+                    "low_pressure_preference": 2,
+                    "shared_context_reliance": 0
+                }
+            }
+        },
+        "Q9": {
+            "question": "Easier online or in person?",
+            "traits_affected": [
+                "digital_comfort",
+                "low_pressure_preference"
+            ],
+            "answers": {
+                "online": {
+                    "digital_comfort": 4,
+                    "low_pressure_preference": 2
+                },
+                "in_person": {
+                    "digital_comfort": 0,
+                    "low_pressure_preference": 0
+                },
+                "both_similar": {
+                    "digital_comfort": 2,
+                    "low_pressure_preference": 0
+                },
+                "neither_easy": {
+                    "digital_comfort": 0,
+                    "low_pressure_preference": 1
+                }
+            }
+        },
+        "Q9A": {
+            "question": "What makes online easier?",
+            "traits_affected": [
+                "digital_comfort",
+                "low_pressure_preference"
+            ],
+            "answers": {
+                "less_pressure": {
+                    "digital_comfort": 2,
+                    "low_pressure_preference": 3
+                },
+                "more_time": {
+                    "digital_comfort": 2,
+                    "low_pressure_preference": 2
+                },
+                "easier_common_interest": {
+                    "digital_comfort": 2,
+                    "low_pressure_preference": 0
+                },
+                "less_judgment": {
+                    "digital_comfort": 2,
+                    "low_pressure_preference": 3
+                },
+                "easier_approach": {
+                    "digital_comfort": 2,
+                    "low_pressure_preference": 1
+                },
+                "other": {
+                    "digital_comfort": 0,
+                    "low_pressure_preference": 0
+                }
+            },
+            "cap": {
+                "digital_comfort": 5,
+                "low_pressure_preference": 5
+            }
+        },
+        "Q10": {
+            "question": "What would make it easier to connect?",
+            "type": "open_text",
+            "scoring": "qualitative only"
+        }
+    },
+    "normalization": {
+        "description": "Since different users see different branches, normalize based on questions seen",
+        "method": "normalized = round((points_earned / points_possible_seen) * 100)"
+    },
+    "style_rules": {
+        "direct_initiator": {
+            "conditions": [
+                "initiation_confidence >= 75",
+                "social_openness >= 65"
+            ]
+        },
+        "context_based_connector": {
+            "conditions": [
+                "shared_context_reliance >= 70",
+                "low_pressure_preference < 75"
+            ]
+        },
+        "low_pressure_connector": {
+            "conditions": [
+                "low_pressure_preference >= 75",
+                "digital_comfort >= 60"
+            ]
+        },
+        "warm_up_socializer": {
+            "conditions": [
+                "low_pressure_preference >= 65",
+                "initiation_confidence between 35 and 65",
+                "Q7 = wait_for_someone OR observe_first"
+            ]
+        },
+        "selective_socializer": {
+            "conditions": [
+                "social_openness between 40 and 70",
+                "shared_context_reliance between 40 and 70",
+                "Q1 = sometimes OR prefer_known_people"
+            ]
+        },
+        "familiar_circle_preferer": {
+            "conditions": [
+                "social_openness < 40",
+                "initiation_confidence < 40"
+            ]
+        }
+    },
+    "result_templates": {
+        "warm_up_socializer": "You tend to ease into new interactions rather than jumping in immediately. You may feel most comfortable when there’s time to observe, a shared context, or a lower-pressure environment.",
+        "context_based_connector": "You seem to connect best when there’s a shared reason to interact, such as classes, activities, or common interests. Structured settings may make social interaction easier.",
+        "low_pressure_connector": "You appear to prefer spaces where interaction feels less intense, less public, and less judgment-heavy. Smaller groups or online-first settings may work best.",
+        "direct_initiator": "You seem comfortable taking the first step in social situations. You may find it easier than most people to begin conversations and build momentum quickly.",
+        "selective_socializer": "You are open to connection but prefer the right context. You may favor meaningful or relevant interactions rather than casual small talk."
+    },
+    "implementation_flow": [
+        "Load survey answers",
+        "Map answers to scoring rules",
+        "Accumulate trait points",
+        "Normalize scores to 0-100",
+        "Assign interaction style",
+        "Save result_profile",
+        "Display result screen"
+    ]
+}

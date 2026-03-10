@@ -1,441 +1,944 @@
 /* ══════════════════════════════════════════════════════
-   survey.js  –  Campus Social Experience Survey
-   Pages: 1 Consent · 2 PANAS · 3 Demographics ·
-          4 Social Exp & Behavior · 5 Initiation ·
-          6 Context & Insights · 7 Completion
+   survey.js  –  Adaptive Campus Social Experience Survey
 ════════════════════════════════════════════════════ */
 
 'use strict';
 
-/* ── Page metadata ───────────────────────────────── */
-const PAGE_META = {
-    2: { label: 'Mood Check – PANAS (1 of 5)', pct: 16 },
-    3: { label: 'Demographics (2 of 5)', pct: 33 },
-    4: { label: 'Social Experience (3 of 5)', pct: 50 },
-    5: { label: 'Initiation (4 of 5)', pct: 66 },
-    6: { label: 'Context & Insights (5 of 5)', pct: 83 },
-    7: { label: 'Complete', pct: 100 },
-};
+// Ensure backward compatibility or clear old localstorage if schema changed drastically
+const DRAFT_KEY = 'adaptive_survey_draft_v1';
+let responses = {};
+let historyStack = []; // track the sequence of questions seen to support "Back"
+let currentQuestionId = null;
+let lastRecordId = null; // For updating with feedback
 
-const TOTAL_PAGES = 7;
-const DRAFT_KEY = 'survey_draft_v3';
+const SURVEY_PLAN = {
+    intro: {
+        section: 'Welcome',
+        title: 'Consent & Information',
+        type: 'info',
+        text: `This research aims to understand student interaction and connection patterns on campus. Your participation is voluntary.
+               <br><br>
+               <strong>Privacy & Data:</strong> Your privacy is our priority. We do <strong>not</strong> record your name, audio, video, or any identifiable personal data. All responses are completely anonymous.
+               <br><br>
+               <strong>Retention:</strong> This research data will be stored securely for <strong>30 days</strong>, after which it will be deleted completely from our systems.
+               <br><br>
+               <strong>Duration:</strong> The survey takes approximately <strong>5–10 minutes</strong>.`,
+        next: () => {
+            if (!responses.started_at) {
+                responses.started_at = Date.now();
+                saveDraft();
+            }
+            return 'd1';
+        }
+    },
 
-let currentPage = 1;
-let surveyStartTime = Date.now();
+    // ── SECTION: Demographics ──
+    d1: {
+        section: 'Demographics',
+        title: 'What is your age range?',
+        type: 'single_select',
+        options: [
+            { id: '18-20', label: '18-20' },
+            { id: '21-22', label: '21-22' },
+            { id: '23-24', label: '23-24' },
+            { id: '25+', label: '25+' }
+        ],
+        next: () => 'd2'
+    },
+    d2: {
+        section: 'Demographics',
+        title: 'What year of study are you in?',
+        type: 'single_select',
+        options: [
+            { id: '1st', label: '1st Year' },
+            { id: '2nd', label: '2nd Year' },
+            { id: '3rd', label: '3rd Year' },
+            { id: '4th_plus', label: '4th Year+' }
+        ],
+        next: () => 'd3'
+    },
+    d3: {
+        section: 'Demographics',
+        title: 'What is your program of study?',
+        type: 'single_select',
+        options: [
+            { id: 'B.Tech/B.E.', label: 'B.Tech / B.E.' },
+            { id: 'M.Tech/M.E.', label: 'M.Tech / M.E.' },
+            { id: 'B.Des/M.Des', label: 'B.Des / M.Des' },
+            { id: 'B.Sc/M.Sc', label: 'B.Sc / M.Sc' },
+            { id: 'B.A./M.A.', label: 'B.A. / M.A.' },
+            { id: 'B.Com/M.Com', label: 'B.Com / M.Com' },
+            { id: 'MBA/MCA', label: 'MBA / MCA' },
+            { id: 'PhD', label: 'PhD' },
+            { id: 'Other', label: 'Other' },
+            { id: 'Prefer not to say', label: 'Prefer not to say' }
+        ],
+        next: () => 'd4'
+    },
+    d4: {
+        section: 'Demographics',
+        title: 'What is your gender?',
+        type: 'single_select',
+        options: [
+            { id: 'Male', label: 'Male' },
+            { id: 'Female', label: 'Female' },
+            { id: 'Non-binary', label: 'Non-binary' },
+            { id: 'Transgender Male', label: 'Transgender Male' },
+            { id: 'Transgender Female', label: 'Transgender Female' },
+            { id: 'Genderqueer', label: 'Genderqueer / Gender non-conforming' },
+            { id: 'Agender', label: 'Agender' },
+            { id: 'Self-describe', label: 'Prefer to self-describe' },
+            { id: 'Prefer not to say', label: 'Prefer not to say' }
+        ],
+        next: () => 'd5'
+    },
+    d5: {
+        section: 'Demographics',
+        title: 'Where do you currently live?',
+        type: 'single_select',
+        options: [
+            { id: 'Hostel', label: 'Hostel (On-campus)' },
+            { id: 'Day Scholar', label: 'Day Scholar (Off-campus)' }
+        ],
+        next: () => 'q1'
+    },
+    q1: {
+        section: 'Section A — Screening',
+        title: 'Do you generally like interacting with new people on campus?',
+        type: 'single_select',
+        options: [
+            { id: 'yes', label: 'Yes, I usually enjoy it' },
+            { id: 'sometimes', label: 'Sometimes, depending on the situation' },
+            { id: 'not_really', label: 'Not really' },
+            { id: 'prefer_known_people', label: 'I usually prefer staying with people I already know' }
+        ],
+        next: (ans) => (ans === 'not_really' || ans === 'prefer_known_people') ? 'q1a' : 'q2'
+    },
+    q1a: {
+        section: 'Section A — Screening',
+        title: 'Which of the following best explains your answer?',
+        type: 'multi_select',
+        options: [
+            { id: 'do_not_feel_need', label: 'I do not usually feel the need to meet new people' },
+            { id: 'difficult_to_start', label: 'I find it difficult to start conversations' },
+            { id: 'comfortable_with_familiar', label: 'I feel more comfortable with familiar people' },
+            { id: 'prefer_small_selective_circles', label: 'I prefer smaller or selective social circles' },
+            { id: 'unsure_what_to_say', label: 'I am unsure what to say' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q1b'
+    },
+    q1b: {
+        section: 'Section A — Screening',
+        title: 'In situations where you do end up talking to someone new, what usually makes that happen?',
+        type: 'short_text',
+        next: () => 'q2'
+    },
 
-/* ── PANAS scoring config ────────────────────────── */
-const PANAS_POSITIVE_ITEMS = [1, 3, 5, 9, 10, 12, 14, 16, 17, 19];
-const PANAS_NEGATIVE_ITEMS = [2, 4, 6, 7, 8, 11, 13, 15, 18, 20];
+    // ── SECTION B: Recent real interaction ──
+    q2: {
+        section: 'Section B — Recent real interaction',
+        title: 'Can you tell us about the last time you talked to someone new on campus?',
+        prompt: 'Please briefly describe the situation.',
+        type: 'long_text',
+        next: () => 'q2a'
+    },
+    q2a: {
+        section: 'Section B — Recent real interaction',
+        title: 'Where did this happen?',
+        type: 'single_select',
+        options: [
+            { id: 'class', label: 'In class' },
+            { id: 'group_assignment', label: 'During a group assignment' },
+            { id: 'club', label: 'At a club or society' },
+            { id: 'event', label: 'At an event' },
+            { id: 'mutual_friend', label: 'Through a mutual friend' },
+            { id: 'hostel_common_area', label: 'In a hostel/common area' },
+            { id: 'online_community', label: 'Online campus group/community' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q2b'
+    },
+    q2b: {
+        section: 'Section B — Recent real interaction',
+        title: 'What started the conversation?',
+        type: 'multi_select',
+        options: [
+            { id: 'shared_task', label: 'Shared task or activity' },
+            { id: 'academic_need', label: 'Academic need' },
+            { id: 'shared_interest', label: 'Shared interest' },
+            { id: 'they_approached', label: 'They approached me' },
+            { id: 'i_approached', label: 'I approached them' },
+            { id: 'mutual_friend_introduced', label: 'Mutual friend introduced us' },
+            { id: 'casual_moment', label: 'Casual/situational moment' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q2c'
+    },
+    q2c: {
+        section: 'Section B — Recent real interaction',
+        title: 'Who initiated the conversation?',
+        type: 'single_select',
+        options: [
+            { id: 'me', label: 'I did' },
+            { id: 'them', label: 'The other person did' },
+            { id: 'both_naturally', label: 'It happened naturally / both' },
+            { id: 'dont_remember', label: 'I do not remember' }
+        ],
+        next: () => 'q2d'
+    },
+    q2d: {
+        section: 'Section B — Recent real interaction',
+        title: 'How comfortable did that interaction feel?',
+        type: 'scale',
+        minLabel: 'Very uncomfortable',
+        maxLabel: 'Very comfortable',
+        next: (ans) => {
+            const val = parseInt(ans);
+            if (val <= 2) return 'q2e';
+            if (val >= 4) return 'q2f';
+            return 'q3';
+        }
+    },
+    q2e: {
+        section: 'Section B — Recent real interaction',
+        title: 'What made that interaction uncomfortable?',
+        type: 'long_text',
+        next: () => 'q3'
+    },
+    q2f: {
+        section: 'Section B — Recent real interaction',
+        title: 'What made that interaction feel comfortable or easy?',
+        type: 'long_text',
+        next: () => 'q3'
+    },
 
-/* ── Response state ──────────────────────────────── */
-const responses = {
-    timestamp: '',
-    // PANAS (items 1–20)
-    panas_1: '', panas_2: '', panas_3: '', panas_4: '', panas_5: '',
-    panas_6: '', panas_7: '', panas_8: '', panas_9: '', panas_10: '',
-    panas_11: '', panas_12: '', panas_13: '', panas_14: '', panas_15: '',
-    panas_16: '', panas_17: '', panas_18: '', panas_19: '', panas_20: '',
-    panas_positive_score: null,
-    panas_negative_score: null,
-    // Demographics (Q1–Q6)
-    age_group: '', year_of_study: '', program: '', stream: '',
-    gender: '', residence: '',
-    // Social Experience (Q6s–Q9)
-    social_satisfaction: '', belonging: '', close_friends: '', social_isolation: '',
-    // Social Behavior (Q10–Q11)
-    social_frequency: '', friendship_ease: '',
-    // Initiation Anxiety (Q12–Q15)
-    initiation_anxiety: '', overthinking: '', avoidance: '', judgment_concern: '',
-    // Initiation Behavior & Comfort (Q16–Q17)
-    conversation_initiator: '', first_interaction_comfort: '',
-    // Context & Alternatives – friendship source (Q18 multi-select)
-    fs_classes: false, fs_hostel: false, fs_clubs: false,
-    fs_mutual: false, fs_online: false, fs_other: false,
-    // Context & Barriers – initiation barriers (Q19 multi-select)
-    ib_fear_rejection: false, ib_not_knowing: false, ib_formed_groups: false,
-    ib_no_topic: false, ib_low_energy: false, ib_nothing: false, ib_other: false,
-    // Context & Desire (Q20)
-    social_expansion_desire: '',
-    // Opportunity Testing (Q21–Q23)
-    online_comfort: '', structured_preference: '', spontaneous_value: '',
-    // Open Insights (Q24–Q25)
-    social_friction_open: '', safety_factors: '',
+    // ── SECTION C: Contexts and natural interaction ──
+    q3: {
+        section: 'Section C — Contexts and natural interaction',
+        title: 'In what situations do you usually end up talking to new people?',
+        type: 'multi_select',
+        options: [
+            { id: 'classes', label: 'Classes' },
+            { id: 'group_assignments', label: 'Group assignments' },
+            { id: 'clubs', label: 'Clubs or societies' },
+            { id: 'events', label: 'Events' },
+            { id: 'mutual_friends', label: 'Mutual friends' },
+            { id: 'shared_hobbies', label: 'Shared hobbies or activities' },
+            { id: 'hostel_common_spaces', label: 'Hostel/common spaces' },
+            { id: 'online_communities', label: 'Online communities' },
+            { id: 'usually_do_not', label: 'I usually do not talk to new people' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q4'
+    },
+    q4: {
+        section: 'Section C — Contexts and natural interaction',
+        title: 'Are there situations where talking to new people feels easier or more natural for you?',
+        type: 'single_select',
+        options: [
+            { id: 'yes', label: 'Yes' },
+            { id: 'sometimes', label: 'Sometimes' },
+            { id: 'no', label: 'No' }
+        ],
+        next: (ans) => (ans === 'yes' || ans === 'sometimes') ? 'q4a' : 'q4c'
+    },
+    q4a: {
+        section: 'Section C — Contexts and natural interaction',
+        title: 'Which situations feel easier?',
+        type: 'multi_select',
+        options: [
+            { id: 'shared_activities', label: 'Shared activities' },
+            { id: 'small_groups', label: 'Small groups' },
+            { id: 'one_on_one', label: 'One-on-one settings' },
+            { id: 'informal_casual', label: 'Informal/casual environments' },
+            { id: 'someone_else_starts', label: 'When someone else starts first' },
+            { id: 'online_interactions', label: 'Online interactions' },
+            { id: 'common_interest', label: 'When I know we have a common interest' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q4b'
+    },
+    q4b: {
+        section: 'Section C — Contexts and natural interaction',
+        title: 'Why do these situations feel easier?',
+        type: 'long_text',
+        next: () => 'q5'
+    },
+    q4c: {
+        section: 'Section C — Contexts and natural interaction',
+        title: 'What usually makes interacting feel difficult even in social settings?',
+        type: 'long_text',
+        next: () => 'q5'
+    },
+
+    // ── SECTION D: Barriers and motivation ──
+    q5: {
+        section: 'Section D — Barriers and motivation',
+        title: 'Are there situations where you usually avoid starting a conversation with someone new?',
+        type: 'single_select',
+        options: [
+            { id: 'yes', label: 'Yes' },
+            { id: 'sometimes', label: 'Sometimes' },
+            { id: 'no', label: 'No' }
+        ],
+        next: (ans) => (ans === 'yes' || ans === 'sometimes') ? 'q5a' : 'q6'
+    },
+    q5a: {
+        section: 'Section D — Barriers and motivation',
+        title: 'What makes those situations difficult?',
+        type: 'multi_select',
+        options: [
+            { id: 'people_in_groups', label: 'People already seem to be in groups' },
+            { id: 'dont_know_how_to_start', label: 'I do not know how to start' },
+            { id: 'worry_about_judgment', label: 'I worry about being judged' },
+            { id: 'no_reason_to_talk', label: 'I feel there is no reason to talk' },
+            { id: 'too_formal', label: 'The setting feels too formal' },
+            { id: 'too_public', label: 'The setting feels too public' },
+            { id: 'may_not_be_interested', label: 'I feel the other person may not be interested' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q5b'
+    },
+    q5b: {
+        section: 'Section D — Barriers and motivation',
+        title: 'What do you usually do instead?',
+        type: 'multi_select',
+        options: [
+            { id: 'wait_for_someone', label: 'Wait for someone to talk to me' },
+            { id: 'observe', label: 'Stay quiet and observe' },
+            { id: 'talk_only_if_needed', label: 'Talk only if necessary' },
+            { id: 'leave', label: 'Leave the situation' },
+            { id: 'stick_to_known_people', label: 'Stick to people I already know' },
+            { id: 'use_phone_avoid', label: 'Use my phone / avoid engagement' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q6'
+    },
+    q6: {
+        section: 'Section D — Barriers and motivation',
+        title: 'What usually motivates you to talk to someone you do not know yet?',
+        type: 'multi_select',
+        options: [
+            { id: 'shared_interest', label: 'Shared interest' },
+            { id: 'academic_reason', label: 'Academic or practical reason' },
+            { id: 'mutual_friend', label: 'Mutual friend' },
+            { id: 'curiosity', label: 'Curiosity' },
+            { id: 'need_for_company', label: 'Need for company' },
+            { id: 'networking', label: 'Networking' },
+            { id: 'group_activity', label: 'Group activity' },
+            { id: 'approachable', label: 'They seem approachable' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q6a'
+    },
+    q6a: {
+        section: 'Section D — Barriers and motivation',
+        title: 'Which one is usually the strongest reason?',
+        type: 'single_select',
+        // Generates from q6 dynamically in the renderer or we show full list. Let's just use the full list as fallback.
+        options: [
+            { id: 'shared_interest', label: 'Shared interest' },
+            { id: 'academic_reason', label: 'Academic or practical reason' },
+            { id: 'mutual_friend', label: 'Mutual friend' },
+            { id: 'curiosity', label: 'Curiosity' },
+            { id: 'need_for_company', label: 'Need for company' },
+            { id: 'networking', label: 'Networking' },
+            { id: 'group_activity', label: 'Group activity' },
+            { id: 'approachable', label: 'They seem approachable' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q7'
+    },
+
+    // ── SECTION E: Behaviour patterns ──
+    q7: {
+        section: 'Section E — Behaviour patterns',
+        title: 'When you join a new group or event, how do you usually behave?',
+        type: 'single_select',
+        options: [
+            { id: 'start_quickly', label: 'I start conversations quickly' },
+            { id: 'clear_reason', label: 'I talk if there is a clear reason' },
+            { id: 'wait_for_someone', label: 'I wait for someone to talk to me' },
+            { id: 'observe_first', label: 'I prefer observing first' },
+            { id: 'avoid_interacting', label: 'I mostly avoid interacting' }
+        ],
+        next: (ans) => {
+            if (ans === 'start_quickly') return 'q7a';
+            if (ans === 'clear_reason') return 'q7b';
+            if (ans === 'wait_for_someone') return 'q7c';
+            if (ans === 'observe_first') return 'q7d';
+            if (ans === 'avoid_interacting') return 'q7e';
+            return 'q8';
+        }
+    },
+    q7a: { section: 'Section E — Behaviour patterns', title: 'What makes you comfortable initiating conversations?', type: 'long_text', next: () => 'q8' },
+    q7b: { section: 'Section E — Behaviour patterns', title: 'What kind of reason usually helps you start interacting?', type: 'long_text', next: () => 'q8' },
+    q7c: { section: 'Section E — Behaviour patterns', title: 'What makes it easier when the other person starts first?', type: 'long_text', next: () => 'q8' },
+    q7d: { section: 'Section E — Behaviour patterns', title: 'What do you usually look for before deciding to interact?', type: 'long_text', next: () => 'q8' },
+    q7e: { section: 'Section E — Behaviour patterns', title: 'What usually stops you from engaging?', type: 'long_text', next: () => 'q8' },
+
+    q8: {
+        section: 'Section E — Behaviour patterns',
+        title: 'Do you find it easier to talk to someone one-on-one or when you are part of a group activity?',
+        type: 'single_select',
+        options: [
+            { id: 'one_on_one', label: 'One-on-one' },
+            { id: 'group_activity', label: 'Group activity' },
+            { id: 'depends', label: 'Depends on the situation' },
+            { id: 'neither_easy', label: 'Neither feels easy' }
+        ],
+        next: (ans) => {
+            if (ans === 'one_on_one') return 'q8a';
+            if (ans === 'group_activity') return 'q8b';
+            if (ans === 'depends') return 'q8c';
+            if (ans === 'neither_easy') return 'q8d';
+            return 'q9';
+        }
+    },
+    q8a: { section: 'Section E — Behaviour patterns', title: 'Why does one-on-one feel easier for you?', type: 'long_text', next: () => 'q9' },
+    q8b: { section: 'Section E — Behaviour patterns', title: 'Why does group activity feel easier for you?', type: 'long_text', next: () => 'q9' },
+    q8c: { section: 'Section E — Behaviour patterns', title: 'What makes the situation matter?', type: 'long_text', next: () => 'q9' },
+    q8d: { section: 'Section E — Behaviour patterns', title: 'What would make social interaction feel easier for you?', type: 'long_text', next: () => 'q9' },
+
+    // ── SECTION F: Digital interaction relevance ──
+    q9: {
+        section: 'Section F — Digital interaction relevance',
+        title: 'Do you think it is easier to interact with new people online or in person?',
+        type: 'single_select',
+        options: [
+            { id: 'online', label: 'Online' },
+            { id: 'in_person', label: 'In person' },
+            { id: 'both_similar', label: 'Both feel similar' },
+            { id: 'neither_easy', label: 'Neither feels easy' }
+        ],
+        next: (ans) => {
+            if (ans === 'online') return 'q9a';
+            if (ans === 'in_person') return 'q9b';
+            if (ans === 'both_similar') return 'q9c';
+            if (ans === 'neither_easy') return 'q9d';
+            return 'q10';
+        }
+    },
+    q9a: {
+        section: 'Section F — Digital interaction relevance',
+        title: 'What makes online interaction easier?',
+        type: 'multi_select',
+        options: [
+            { id: 'less_pressure', label: 'Less pressure' },
+            { id: 'more_time', label: 'More time to think before replying' },
+            { id: 'easier_common_interest', label: 'Easier to find common interests' },
+            { id: 'less_judgment', label: 'Less fear of judgment' },
+            { id: 'easier_approach', label: 'Easier to approach people' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q10'
+    },
+    q9b: {
+        section: 'Section F — Digital interaction relevance',
+        title: 'What makes in-person interaction easier?',
+        type: 'multi_select',
+        options: [
+            { id: 'natural', label: 'Feels more natural' },
+            { id: 'read_person', label: 'Easier to read the other person' },
+            { id: 'flow', label: 'Better flow of conversation' },
+            { id: 'genuine', label: 'More genuine connection' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q10'
+    },
+    q9c: { section: 'Section F — Digital interaction relevance', title: 'In what situations does each one work better?', type: 'long_text', next: () => 'q10' },
+    q9d: { section: 'Section F — Digital interaction relevance', title: 'What makes both online and in-person interaction difficult?', type: 'long_text', next: () => 'q10' },
+
+    // ── SECTION Wrap-up ──
+    q10: {
+        section: 'Final open-ended wrap-up',
+        title: 'If you could improve how students meet and connect with new people on campus, what would make that easier?',
+        type: 'long_text',
+        next: () => 'complete'
+    },
+    complete: {
+        section: 'Completed',
+        title: 'Thank you for your insights',
+        type: 'completion',
+        text: 'Your nuanced feedback helps us to better understand specific challenges students face and design truly supportive environments.',
+        next: null
+    }
 };
 
 /* ══════════════════════════════════════════════════
-   PANAS SCORING
+   RENDER ENGINE
 ════════════════════════════════════════════════════ */
-function computePanasScores() {
-    const posVals = PANAS_POSITIVE_ITEMS
-        .map(i => Number(responses[`panas_${i}`]))
-        .filter(v => v >= 1 && v <= 5);
-    const negVals = PANAS_NEGATIVE_ITEMS
-        .map(i => Number(responses[`panas_${i}`]))
-        .filter(v => v >= 1 && v <= 5);
 
-    responses.panas_positive_score = posVals.length === 10
-        ? posVals.reduce((a, b) => a + b, 0) : null;
-    responses.panas_negative_score = negVals.length === 10
-        ? negVals.reduce((a, b) => a + b, 0) : null;
-}
-
-/* ══════════════════════════════════════════════════
-   PAGE NAVIGATION
-════════════════════════════════════════════════════ */
-function goToPage(n) {
-    const prev = document.getElementById(`page-${currentPage}`);
-    const next = document.getElementById(`page-${n}`);
-    if (!next) return;
-
-    if (prev) prev.classList.remove('active');
-    next.classList.add('active');
-    currentPage = n;
-
-    updateProgress(n);
-    saveDraft();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function updateProgress(n) {
-    const wrapper = document.getElementById('progress-wrapper');
-    if (!wrapper) return;
-
-    if (n === 1 || n === 7) {
-        wrapper.style.display = 'none';
+document.addEventListener("DOMContentLoaded", () => {
+    loadDraft();
+    if (!currentQuestionId) {
+        currentQuestionId = 'intro';
+    } else if (currentQuestionId === 'complete') {
+        renderComplete();
         return;
     }
-    wrapper.style.display = 'block';
-
-    const meta = PAGE_META[n] || {};
-    const labelEl = document.getElementById('progress-label');
-    const pctEl = document.getElementById('progress-pct');
-    const fillEl = document.getElementById('progress-fill');
-
-    if (labelEl) labelEl.textContent = meta.label || '';
-    if (pctEl) pctEl.textContent = `${meta.pct || 0}%`;
-    if (fillEl) fillEl.style.width = `${meta.pct || 0}%`;
-}
-
-/* ══════════════════════════════════════════════════
-   CONSENT GATE
-════════════════════════════════════════════════════ */
-function initConsent() {
-    const cb = document.getElementById('consent-checkbox');
-    const btn = document.getElementById('consent-btn');
-    const row = document.getElementById('consent-row');
-    if (!cb || !btn) return;
-
-    cb.addEventListener('change', () => {
-        btn.disabled = !cb.checked;
-        if (row) row.classList.toggle('checked', cb.checked);
-    });
-
-    btn.addEventListener('click', () => {
-        if (!btn.disabled) goToPage(2);
-    });
-}
-
-/* ══════════════════════════════════════════════════
-   INPUT WIRING
-════════════════════════════════════════════════════ */
-function wireInputs() {
-    // ── Selects + text inputs ──────────────────────
-    const textFields = [
-        'age_group', 'year_of_study', 'program', 'stream',
-    ];
-    textFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('change', () => {
-            responses[id] = el.value;
-            saveDraft();
-        });
-    });
-
-    // ── Generic: all radios ────────────────────────
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            const name = radio.name;
-            if (name.startsWith('panas_')) {
-                responses[name] = parseInt(radio.value, 10);
-                computePanasScores();
-            } else if (name in responses) {
-                responses[name] = radio.value;
-            }
-            saveDraft();
-        });
-    });
-
-    // ── Multi-select checkboxes ────────────────────
-    const CHECKBOX_MAP = {
-        friendship_source: {
-            'Classes': 'fs_classes',
-            'Hostel/Living space': 'fs_hostel',
-            'Clubs/Events': 'fs_clubs',
-            'Mutual friends': 'fs_mutual',
-            'Online platforms': 'fs_online',
-            'Other': 'fs_other',
-        },
-        initiation_barriers: {
-            'Fear of rejection': 'ib_fear_rejection',
-            'Not knowing what to say': 'ib_not_knowing',
-            'Already formed friend groups': 'ib_formed_groups',
-            'Lack of common topic': 'ib_no_topic',
-            'Low energy': 'ib_low_energy',
-            'Nothing stops me': 'ib_nothing',
-            'Other': 'ib_other',
-        },
-    };
-
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', () => {
-            const map = CHECKBOX_MAP[cb.name];
-            if (map && map[cb.value] !== undefined) {
-                responses[map[cb.value]] = cb.checked;
-            }
-            saveDraft();
-        });
-    });
-
-    // ── Textareas ─────────────────────────────────
-    wireTextarea('social_friction_open', 'q24-counter');
-    wireTextarea('safety_factors', 'q25-counter');
-
-    // ── Gender + residence radios ──────────────────
-    ['gender', 'residence'].forEach(name => {
-        document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
-            r.addEventListener('change', () => {
-                responses[name] = r.value;
-                saveDraft();
-            });
-        });
-    });
-}
-
-function wireTextarea(id, counterId) {
-    const el = document.getElementById(id);
-    const counter = document.getElementById(counterId);
-    if (!el) return;
-    el.addEventListener('input', () => {
-        responses[id] = el.value;
-        if (counter) counter.textContent = `${el.value.length} / ${el.maxLength}`;
-        saveDraft();
-    });
-}
-
-/* ══════════════════════════════════════════════════
-   AUTO-SAVE  (localStorage draft)
-════════════════════════════════════════════════════ */
-function saveDraft() {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ page: currentPage, responses }));
-    showToast();
-}
-
-function showToast() {
-    const t = document.getElementById('autosave-toast');
-    if (!t) return;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 1800);
-}
-
-function restoreDraft() {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return;
-    try {
-        const saved = JSON.parse(raw);
-
-        // Restore response values
-        Object.keys(saved.responses || {}).forEach(key => {
-            if (key in responses) responses[key] = saved.responses[key];
-        });
-
-        // Radios (including PANAS)
-        document.querySelectorAll('input[type="radio"]').forEach(r => {
-            const saved_val = responses[r.name];
-            if (saved_val !== '' && saved_val !== null &&
-                String(r.value) === String(saved_val)) {
-                r.checked = true;
-            }
-        });
-
-        // Selects
-        ['age_group', 'year_of_study', 'program'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el && responses[id]) el.value = responses[id];
-        });
-
-        // Text input
-        const streamEl = document.getElementById('stream');
-        if (streamEl && responses.stream) streamEl.value = responses.stream;
-
-        // Textareas
-        ['social_friction_open', 'safety_factors'].forEach(id => {
-            const el = document.getElementById(id);
-            const counter = document.getElementById(id === 'social_friction_open' ? 'q24-counter' : 'q25-counter');
-            if (el && responses[id]) {
-                el.value = responses[id];
-                if (counter) counter.textContent = `${el.value.length} / ${el.maxLength}`;
-            }
-        });
-
-        // Checkboxes
-        const RESTORE_MAP = {
-            fs_classes: { name: 'friendship_source', value: 'Classes' },
-            fs_hostel: { name: 'friendship_source', value: 'Hostel/Living space' },
-            fs_clubs: { name: 'friendship_source', value: 'Clubs/Events' },
-            fs_mutual: { name: 'friendship_source', value: 'Mutual friends' },
-            fs_online: { name: 'friendship_source', value: 'Online platforms' },
-            fs_other: { name: 'friendship_source', value: 'Other' },
-            ib_fear_rejection: { name: 'initiation_barriers', value: 'Fear of rejection' },
-            ib_not_knowing: { name: 'initiation_barriers', value: 'Not knowing what to say' },
-            ib_formed_groups: { name: 'initiation_barriers', value: 'Already formed friend groups' },
-            ib_no_topic: { name: 'initiation_barriers', value: 'Lack of common topic' },
-            ib_low_energy: { name: 'initiation_barriers', value: 'Low energy' },
-            ib_nothing: { name: 'initiation_barriers', value: 'Nothing stops me' },
-            ib_other: { name: 'initiation_barriers', value: 'Other' },
-        };
-
-        Object.entries(RESTORE_MAP).forEach(([key, { name, value }]) => {
-            if (responses[key]) {
-                const cb = document.querySelector(
-                    `input[type="checkbox"][name="${name}"][value="${value}"]`
-                );
-                if (cb) cb.checked = true;
-            }
-        });
-
-        // Navigate to saved page (but not completion)
-        const p = saved.page;
-        if (p && p > 1 && p < 7) goToPage(p);
-
-    } catch (e) {
-        console.warn('Draft restore failed:', e);
-    }
-}
-
-/* ══════════════════════════════════════════════════
-   SUBMIT MODAL
-════════════════════════════════════════════════════ */
-function openSubmitModal() {
-    const modal = document.getElementById('submit-modal');
-    if (modal) modal.classList.add('open');
-}
-
-function initModal() {
-    const cancel = document.getElementById('modal-cancel');
-    const confirm = document.getElementById('modal-confirm');
-    const modal = document.getElementById('submit-modal');
-
-    if (cancel) cancel.addEventListener('click', () => modal.classList.remove('open'));
-    if (confirm) confirm.addEventListener('click', submitSurvey);
-}
-
-/* ══════════════════════════════════════════════════
-   SUBMISSION
-════════════════════════════════════════════════════ */
-async function submitSurvey() {
-    responses.timestamp = new Date().toISOString();
-    // ── Final DOM Sweep (Fail-safe for missed events) ───────────
-    // Captures Selects and Text fields
-    const directFields = ['age_group', 'year_of_study', 'program', 'stream', 'social_friction_open', 'safety_factors'];
-    directFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) responses[id] = el.value;
-    });
-
-    // Captures all selected Radios
-    document.querySelectorAll('input[type="radio"]:checked').forEach(r => {
-        if (r.name.startsWith('panas_')) {
-            responses[r.name] = parseInt(r.value, 10);
-        } else if (r.name in responses) {
-            responses[r.name] = r.value;
-        }
-    });
-
-    // Captures all Checkboxes (specifically for fs_* and ib_* maps)
-    const CHECKBOX_MAP = {
-        friendship_source: { 'Classes': 'fs_classes', 'Hostel/Living space': 'fs_hostel', 'Clubs/Events': 'fs_clubs', 'Mutual friends': 'fs_mutual', 'Online platforms': 'fs_online', 'Other': 'fs_other' },
-        initiation_barriers: { 'Fear of rejection': 'ib_fear_rejection', 'Not knowing what to say': 'ib_not_knowing', 'Already formed friend groups': 'ib_formed_groups', 'Lack of common topic': 'ib_no_topic', 'Low energy': 'ib_low_energy', 'Nothing stops me': 'ib_nothing', 'Other': 'ib_other' }
-    };
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        const fieldMap = CHECKBOX_MAP[cb.name];
-        if (fieldMap && fieldMap[cb.value]) {
-            responses[fieldMap[cb.value]] = cb.checked;
-        }
-    });
-
-    computePanasScores();
-
-    // ── Run trait engine ────────────────────────────────────────
-    const completionSecs = Math.round((Date.now() - surveyStartTime) / 1000);
-    let engineResult = null;
-    try {
-        engineResult = runEngine(responses, completionSecs);
-    } catch (e) {
-        console.warn('Engine error:', e);
-    }
-
-    // Build final record
-    const record = {
-        ...responses,
-        completion_time_seconds: completionSecs,
-        trait_ER: engineResult?.traits?.ER ?? null,
-        trait_CR: engineResult?.traits?.CR ?? null,
-        trait_SI: engineResult?.traits?.SI ?? null,
-        trait_PF: engineResult?.traits?.PF ?? null,
-        trait_GP: engineResult?.traits?.GP ?? null,
-        trait_SE: engineResult?.traits?.SE ?? null,
-        trait_ED: engineResult?.traits?.ED ?? null,
-        archetype: engineResult?.archetypeKey ?? null,
-        suspect_submission: engineResult?.suspect ?? false,
-    };
-
-    console.log('[Survey] Final Local Record Built:', record);
-
-    // Store result separately so result page can read it without parsing all responses
-    try {
-        localStorage.setItem('last_result', JSON.stringify(engineResult));
-    } catch (_) { }
-
-    // Load existing responses, append new one (localStorage fallback)
-    const allKey = 'survey_responses';
-    let all = [];
-    try { all = JSON.parse(localStorage.getItem(allKey) || '[]'); } catch (_) { }
-    all.push(record);
-    localStorage.setItem(allKey, JSON.stringify(all));
-
-    // ── Save to Supabase (blocking with await) ───────────────────
-    const btn = document.getElementById('modal-confirm');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Submitting...';
-    }
-
-    if (typeof saveToSupabase === 'function') {
-        try {
-            const data = await saveToSupabase(record);
-            if (data && data[0] && data[0].id) {
-                localStorage.setItem('last_response_id', data[0].id);
-            }
-        } catch (err) {
-            console.warn('[Supabase] Save failed, data persistent in localStorage:', err);
-        }
-    }
-
-    // Clear draft
-    localStorage.removeItem(DRAFT_KEY);
-
-    // Redirect to identity result page
-    window.location.href = 'result.html';
-}
-
-/* ══════════════════════════════════════════════════
-   INIT
-════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-    initConsent();
-    wireInputs();
-    initModal();
-    restoreDraft();
+    renderNode(currentQuestionId);
 });
+
+function loadDraft() {
+    try {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            responses = data.responses || {};
+            historyStack = data.historyStack || [];
+            currentQuestionId = data.currentQuestionId || 'intro';
+        }
+    } catch (e) {
+        console.warn('Could not load draft', e);
+    }
+}
+
+function saveDraft() {
+    try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            responses,
+            historyStack,
+            currentQuestionId
+        }));
+        showToast();
+    } catch (e) { }
+}
+
+let toastTimer;
+function showToast() {
+    const toast = document.getElementById('autosave-toast');
+    if (!toast) return;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function renderNode(qId) {
+    if (qId === 'complete') {
+        renderComplete();
+        return;
+    }
+    const root = document.getElementById('survey-root');
+    const node = SURVEY_PLAN[qId];
+    if (!node) return;
+
+    // Update Progress Bar
+    const progWrap = document.getElementById('progress-wrapper');
+    if (qId === 'intro' || qId === 'complete') {
+        if (progWrap) progWrap.style.display = 'none';
+    } else {
+        if (progWrap) {
+            progWrap.style.display = 'block';
+            const keys = Object.keys(SURVEY_PLAN);
+            const total = keys.length - 2; // Subtract intro/complete
+            const currentIndex = keys.indexOf(qId);
+            const pct = Math.min(Math.round(((currentIndex) / total) * 100), 100);
+            document.getElementById('progress-label').textContent = node.section;
+            document.getElementById('progress-pct').textContent = `${pct}%`;
+            document.getElementById('progress-fill').style.width = `${pct}%`;
+        }
+    }
+
+    let html = '';
+
+    // Add page badge and heading
+    if (node.type === 'completion') {
+        html += `
+        <div class="completion-center">
+            <div class="completion-icon"></div>
+            <h2 class="completion-heading">${node.title}</h2>
+            <p class="completion-msg">${node.text}</p>
+        </div>`;
+    } else if (node.type === 'info') {
+        html += `
+        <div class="page-badge">👋 ${node.section}</div>
+        <h2 class="page-heading">${node.title}</h2>
+        <div class="page-subheading info-text" style="text-align: left; margin-top: 24px;">${node.text}</div>
+        
+        ${qId === 'intro' ? `
+        <div class="consent-block" style="margin-top: 32px; padding: 20px; background: var(--fill-quaternary); border-radius: var(--radius-lg); text-align: left;">
+            <label class="radio-option" style="cursor: pointer; display: flex; align-items: start; gap: 12px;">
+                <input type="checkbox" id="consent-check" style="width: 20px; height: 20px; margin-top: 2px;">
+                <span class="option-label" style="font-size: 15px; font-weight: 500; color: var(--label-primary);">I acknowledge the information provided and wish to continue with the survey.</span>
+            </label>
+        </div>
+        ` : ''}
+        `;
+    } else {
+        html += `
+        <div class="page-badge">${node.section}</div>
+        <div class="form-group">
+            <h2 class="form-label" style="font-size: 16px; margin-bottom: 20px; line-height: 1.5; color: var(--label-primary); text-transform:none;">${node.title}</h2>
+            ${renderInputGroup(qId, node)}
+        </div>
+        `;
+    }
+
+    // Dynamic filtering for Q6a options if derived from Q6
+    if (qId === 'q6a' && responses['q6'] && responses['q6'].length > 0) {
+        // filter options array based on array 'responses.q6'
+    }
+
+    // Buttons
+    html += `<div class="btn-row">`;
+    if (historyStack.length > 0 && qId !== 'complete') {
+        html += `<button class="btn btn-ghost" onclick="goBack()">← Back</button>`;
+    } else {
+        html += `<div></div>`; // placeholder for flex
+    }
+
+    if (qId !== 'complete') {
+        const isNextSubmit = (node.next && node.next(responses[qId]) === 'complete');
+        const btnText = isNextSubmit ? 'Complete Survey' : 'Continue →';
+        html += `<button class="btn btn-primary" id="btn-next" onclick="goNext('${qId}')">${btnText}</button>`;
+    }
+    html += `</div>`;
+
+    root.innerHTML = `<div class="survey-page active">${html}</div>`;
+
+    // Restore value
+    if (responses[qId] !== undefined) {
+        restoreValue(qId, node.type, responses[qId]);
+    }
+}
+
+function renderInputGroup(qId, ObjectDetails) {
+    if (ObjectDetails.type === 'single_select') {
+        return `<div class="radio-group">
+            ${ObjectDetails.options.map(opt => `
+                <label class="radio-option">
+                    <input type="radio" name="${qId}" value="${opt.id}" onchange="cacheValue('${qId}', '${opt.id}')">
+                    <div class="custom-radio"></div>
+                    <span class="option-label">${opt.label}</span>
+                </label>
+            `).join('')}
+        </div>`;
+    }
+
+    if (ObjectDetails.type === 'multi_select') {
+        return `<div class="checkbox-group">
+            ${ObjectDetails.options.map(opt => `
+                <label class="checkbox-option">
+                    <input type="checkbox" name="${qId}" value="${opt.id}" onchange="cacheMulti('${qId}', this)">
+                    <div class="custom-checkbox"></div>
+                    <span class="option-label">${opt.label}</span>
+                </label>
+            `).join('')}
+        </div>`;
+    }
+
+    if (ObjectDetails.type === 'scale') {
+        return `<div class="likert-wrapper">
+            <div class="likert-labels">
+                <span>${ObjectDetails.minLabel || 1}</span>
+                <span>${ObjectDetails.maxLabel || 5}</span>
+            </div>
+            <div class="likert-options">
+                ${[1, 2, 3, 4, 5].map(v => `
+                    <div class="likert-option">
+                        <input type="radio" name="${qId}" id="${qId}_${v}" value="${v}" onchange="cacheValue('${qId}', '${v}')">
+                        <label for="${qId}_${v}">${v}</label>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    }
+
+    if (ObjectDetails.type === 'short_text') {
+        return `<input type="text" class="form-input" id="input_${qId}" oninput="cacheValue('${qId}', this.value)" placeholder="${ObjectDetails.prompt || 'Type your response...'}">`;
+    }
+
+    if (ObjectDetails.type === 'long_text') {
+        return `<textarea class="form-textarea" id="input_${qId}" oninput="cacheValue('${qId}', this.value)" placeholder="${ObjectDetails.prompt || 'Provide details...'}"></textarea>`;
+    }
+
+    return '';
+}
+
+function cacheValue(qId, val) {
+    responses[qId] = val;
+    if (!responses.timestamps) responses.timestamps = {};
+    responses.timestamps[qId] = Date.now();
+    saveDraft();
+}
+
+function cacheMulti(qId, el) {
+    if (!responses[qId]) responses[qId] = [];
+    if (el.checked) {
+        if (!responses[qId].includes(el.value)) responses[qId].push(el.value);
+    } else {
+        responses[qId] = responses[qId].filter(v => v !== el.value);
+    }
+    if (!responses.timestamps) responses.timestamps = {};
+    responses.timestamps[qId] = Date.now();
+    saveDraft();
+}
+
+function restoreValue(qId, type, value) {
+    if (!value) return;
+    if (type === 'single_select' || type === 'scale') {
+        const el = document.querySelector(`input[name="${qId}"][value="${value}"]`);
+        if (el) el.checked = true;
+    } else if (type === 'multi_select') {
+        const arr = Array.isArray(value) ? value : [];
+        arr.forEach(v => {
+            const el = document.querySelector(`input[name="${qId}"][value="${v}"]`);
+            if (el) el.checked = true;
+        });
+    } else if (type === 'short_text' || type === 'long_text') {
+        const el = document.getElementById(`input_${qId}`);
+        if (el) el.value = value;
+    }
+}
+
+function goBack() {
+    if (historyStack.length === 0) return;
+    const prevNodeId = historyStack.pop();
+    currentQuestionId = prevNodeId;
+    saveDraft();
+    renderNode(currentQuestionId);
+}
+
+function goNext(qId) {
+    const node = SURVEY_PLAN[qId];
+    if (!node || !node.next) return;
+
+    // Validate if required answers are given
+    if (qId === 'intro') {
+        const check = document.getElementById('consent-check');
+        if (!check || !check.checked) {
+            alert('Please acknowledge and agree to continue.');
+            return;
+        }
+    } else if (node.type !== 'info') {
+        const val = responses[qId];
+        if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
+            alert('Please provide an answer to continue.');
+            return;
+        }
+    }
+
+    const nextId = node.next(responses[qId]);
+    if (nextId === 'complete') {
+        submitAdaptiveSurvey();
+    } else {
+        historyStack.push(qId);
+        currentQuestionId = nextId;
+        saveDraft();
+        renderNode(currentQuestionId);
+    }
+}
+
+/* ══════════════════════════════════════════════════
+   SUBMITTING TO SUPABASE (JSON Blob version)
+════════════════════════════════════════════════════ */
+function submitAdaptiveSurvey() {
+    // We launch the modal from the template before actually sending
+    const modal = document.getElementById('submit-modal');
+    modal.classList.add('open');
+
+    document.getElementById('modal-cancel').onclick = () => {
+        modal.classList.remove('open');
+    };
+
+    document.getElementById('modal-confirm').onclick = async () => {
+        const btn = document.getElementById('modal-confirm');
+        btn.textContent = 'Submitting...';
+        btn.disabled = true;
+
+        try {
+            // Calculate final scores before final submission
+            let resultProfile = null;
+            if (typeof calculateAdaptiveScores === 'function') {
+                resultProfile = calculateAdaptiveScores(responses);
+                responses.computed_profile = resultProfile; // Store in record
+            }
+
+            if (typeof saveAdaptiveToSupabase === 'function') {
+                const saveResult = await saveAdaptiveToSupabase(responses);
+                if (saveResult && saveResult.id) {
+                    lastRecordId = saveResult.id;
+                }
+            } else {
+                console.warn("Supabase not linked or saveAdaptiveToSupabase not defined.");
+            }
+
+            // On success
+            modal.classList.remove('open');
+            historyStack.push(currentQuestionId);
+            currentQuestionId = 'complete';
+            saveDraft();
+            renderNode('complete');
+            localStorage.removeItem(DRAFT_KEY); // Clean up draft
+
+        } catch (err) {
+            alert('Error submitting survey: ' + err.message);
+            btn.textContent = 'Submit Now';
+            btn.disabled = false;
+        }
+    };
+}
+
+function renderComplete() {
+    const root = document.getElementById('survey-root');
+
+    // Auto-calculate if missing (e.g. on reload)
+    if (!responses.computed_profile && typeof calculateAdaptiveScores === 'function') {
+        responses.computed_profile = calculateAdaptiveScores(responses);
+    }
+
+    const profile = responses.computed_profile;
+
+    if (!profile) {
+        root.innerHTML = `
+        <div class="survey-page active">
+            <div class="completion-center">
+                <div class="completion-icon"></div>
+                <h2 class="completion-heading">Thank you</h2>
+                <p class="completion-msg">Your nuanced feedback helps us to better understand specific challenges students face and design truly supportive environments.</p>
+            </div>
+        </div>`;
+        return;
+    }
+
+    // Modern Profile View
+    root.innerHTML = `
+    <div class="survey-page active profile-page">
+        <div class="profile-header">
+            <div class="profile-badge">Researcher Analysis Complete</div>
+            <h1 class="profile-style-label">${profile.style_label}</h1>
+            <p class="profile-style-desc">${profile.style_description}</p>
+        </div>
+
+        <div class="results-section">
+            <h3 class="section-title">Key Social Signals</h3>
+            <div class="signals-grid">
+                ${profile.signals.length > 0 ? profile.signals.map(s => `
+                    <div class="signal-card">
+                        <div class="signal-tag">${s.label}</div>
+                        <p class="signal-desc">${s.desc}</p>
+                    </div>
+                `).join('') : '<p class="empty-msg">No distinctive behavioral signals detected in this session.</p>'}
+            </div>
+        </div>
+
+        <div class="results-section">
+            <h3 class="section-title">Trait Breakdown</h3>
+            <div class="trait-grid">
+                ${Object.keys(profile.scores).map(trait => {
+        const label = trait.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const val = profile.scores[trait];
+        return `
+                    <div class="trait-card">
+                        <div class="trait-info">
+                            <span class="trait-label">${label}</span>
+                            <span class="trait-val">${val}%</span>
+                        </div>
+                        <div class="trait-bar-container">
+                            <div class="trait-bar-fill" style="width: ${val}%"></div>
+                        </div>
+                    </div>
+                    `;
+    }).join('')}
+            </div>
+        </div>
+
+        <div class="results-section feedback-section" id="feedback-card">
+            <h3 class="section-title">Is this you?</h3>
+            <p class="feedback-intro">We want to verify if our analysis matches your actual experience. Your feedback helps improve the research.</p>
+            
+            <div class="feedback-container">
+                <div class="feedback-question">
+                    <span>Does this profile accurately reflect your campus personality?</span>
+                    <div class="rating-buttons">
+                        <button class="btn-rating" onclick="setFeedbackRating(5)" title="Strongly Agree">🤩</button>
+                        <button class="btn-rating" onclick="setFeedbackRating(4)" title="Agree">🙂</button>
+                        <button class="btn-rating" onclick="setFeedbackRating(3)" title="Neutral">😐</button>
+                        <button class="btn-rating" onclick="setFeedbackRating(2)" title="Disagree">😞</button>
+                    </div>
+                </div>
+
+                <div class="feedback-row">
+                    <div class="feedback-item">
+                        <label>Do you find this relatable?</label>
+                        <div class="toggle-group">
+                            <button class="btn-toggle" id="rel-yes" onclick="setRelatable(true)">Yes</button>
+                            <button class="btn-toggle" id="rel-no" onclick="setRelatable(false)">No</button>
+                        </div>
+                    </div>
+                    <div class="feedback-item">
+                        <label>Was this insight relevant?</label>
+                        <div class="toggle-group">
+                            <button class="btn-toggle" id="rev-yes" onclick="setRelevant(true)">Yes</button>
+                            <button class="btn-toggle" id="rev-no" onclick="setRelevant(false)">No</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feedback-footer">
+                    <button class="btn btn-primary btn-sm" onclick="submitFeedbackUI()">Confirm My Traits</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-footer">
+            <div class="analysis-disclaimer">
+                <p><strong>Note:</strong> This analysis is based on rule-based behavioral mapping of your branching paths. It's intended to help you understand your primary social comfort zones on campus.</p>
+            </div>
+            <div class="footer-actions">
+                <button class="btn btn-primary" onclick="window.location.reload()">Start New Session</button>
+                <button class="btn btn-ghost" onclick="window.print()">Save Profile (PDF)</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+// Global feedback state for the results page
+let currentFeedback = {
+    rating: null,
+    relatable: null,
+    relevant: null
+};
+
+window.setFeedbackRating = (r) => {
+    currentFeedback.rating = r;
+    document.querySelectorAll('.btn-rating').forEach((b, i) => {
+        b.classList.toggle('active', 5 - i === r);
+    });
+};
+
+window.setRelatable = (val) => {
+    currentFeedback.relatable = val;
+    document.getElementById('rel-yes').classList.toggle('active', val === true);
+    document.getElementById('rel-no').classList.toggle('active', val === false);
+};
+
+window.setRelevant = (val) => {
+    currentFeedback.relevant = val;
+    document.getElementById('rev-yes').classList.toggle('active', val === true);
+    document.getElementById('rev-no').classList.toggle('active', val === false);
+};
+
+window.submitFeedbackUI = async () => {
+    if (currentFeedback.rating === null) {
+        alert('Please select a rating before submitting.');
+        return;
+    }
+
+    const card = document.getElementById('feedback-card');
+    const footer = card.querySelector('.feedback-footer');
+    footer.innerHTML = '<span class="saving-text">Sending feedback...</span>';
+
+    if (typeof updateFeedbackInSupabase === 'function' && lastRecordId) {
+        await updateFeedbackInSupabase(lastRecordId, currentFeedback);
+    }
+
+    card.innerHTML = `
+        <div class="feedback-success">
+            <h3>Thank you for confirming!</h3>
+            <p>Your feedback has been linked to your session. This helps us ensure our behavioral models are accurate for the student community.</p>
+        </div>
+    `;
+};
