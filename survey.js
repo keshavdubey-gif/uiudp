@@ -111,18 +111,7 @@ const SURVEY_PLAN = {
             { id: 'not_really', label: 'Not really' },
             { id: 'prefer_known_people', label: 'I usually prefer staying with people I already know' }
         ],
-        next: (ans) => (ans === 'not_really' || ans === 'prefer_known_people') ? 'thank_you_exit' : 'q2'
-    },
-    thank_you_exit: {
-        section: 'Exit',
-        title: 'Thank you for your time!',
-        type: 'info',
-        text: `We appreciate your interest in our research. 
-               <br><br>
-               At the moment, our study is specifically focusing on students who are actively seeking to build or understand their social connections on campus. 
-               <br><br>
-               Since you indicated you're comfortable with your current circle, you do not need to continue with this particular survey. Thank you for helping us narrow our research focus!`,
-        next: null
+        next: () => 'q2'
     },
 
     // ── SECTION B: Recent real interaction ──
