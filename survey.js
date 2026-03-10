@@ -16,13 +16,12 @@ const SURVEY_PLAN = {
         section: 'Welcome',
         title: 'Consent & Information',
         type: 'info',
-        text: `This research aims to understand student interaction and connection patterns on campus. Your participation is voluntary.
-               <br><br>
-               <strong>Privacy & Data:</strong> Your privacy is our priority. We do <strong>not</strong> record your name, audio, video, or any identifiable personal data. All responses are completely anonymous.
-               <br><br>
-               <strong>Retention:</strong> This research data will be stored securely for <strong>30 days</strong>, after which it will be deleted completely from our systems.
-               <br><br>
-               <strong>Duration:</strong> The survey takes approximately <strong>5–10 minutes</strong>.`,
+        text: `This research aims to understand student interaction and connection patterns on campus. Your participation is voluntary.`,
+        details: [
+            { icon: '🛡️', title: 'Privacy & Data', desc: 'Your privacy is our priority. We do <strong>not</strong> record your name, audio, video, or any identifiable personal data.' },
+            { id: 'retention', icon: '⏳', title: 'Data Retention', desc: 'This research data will be stored securely for <strong>30 days</strong>, after which it will be deleted completely.' },
+            { icon: '⏱️', title: 'Session Duration', desc: 'The survey takes approximately <strong>5–10 minutes</strong>. Thank you for your time.' }
+        ],
         next: () => {
             if (!responses.started_at) {
                 responses.started_at = Date.now();
@@ -555,13 +554,30 @@ function renderNode(qId) {
         html += `
         <div class="page-badge">👋 ${node.section}</div>
         <h2 class="page-heading">${node.title}</h2>
-        <div class="page-subheading info-text" style="text-align: left; margin-top: 24px;">${node.text}</div>
+        <div class="page-subheading info-text" style="text-align: left; margin-top: 16px; margin-bottom: 24px;">${node.text}</div>
         
+        ${node.details ? `
+        <div class="info-details-grid">
+            ${node.details.map(d => `
+                <div class="info-detail-item">
+                    <div class="info-detail-icon">${d.icon}</div>
+                    <div class="info-detail-content">
+                        <h4>${d.title}</h4>
+                        <p>${d.desc}</p>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        ` : ''}
+
         ${qId === 'intro' ? `
-        <div class="consent-block" style="margin-top: 32px; padding: 20px; background: var(--fill-quaternary); border-radius: var(--radius-lg); text-align: left;">
-            <label class="radio-option" style="cursor: pointer; display: flex; align-items: start; gap: 12px;">
-                <input type="checkbox" id="consent-check" style="width: 20px; height: 20px; margin-top: 2px;">
-                <span class="option-label" style="font-size: 15px; font-weight: 500; color: var(--label-primary);">I acknowledge the information provided and wish to continue with the survey.</span>
+        <div class="consent-block-new">
+            <label class="consent-label">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="consent-check">
+                    <div class="checkbox-box"></div>
+                </div>
+                <span class="consent-text">I acknowledge the information provided and wish to continue with the survey.</span>
             </label>
         </div>
         ` : ''}
