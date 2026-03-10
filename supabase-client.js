@@ -221,6 +221,7 @@ async function saveAdaptiveToSupabase(responses) {
 
     const dbRow = {
         payload: jsonPayload,
+        trait_id: computedProfile ? computedProfile.id : null,
         age_group,
         year_of_study,
         program,
