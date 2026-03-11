@@ -12,13 +12,6 @@ const SCORING_CONFIG = {
         not_really: { social_openness: 0, initiation_confidence: 0 },
         prefer_known_people: { social_openness: 1, initiation_confidence: 0 }
     },
-    q1a: {
-        difficult_to_start: { low_pressure_preference: 2 },
-        comfortable_with_familiar: { low_pressure_preference: 1 },
-        prefer_small_selective_circles: { low_pressure_preference: 2 },
-        unsure_what_to_say: { low_pressure_preference: 1 },
-        _caps: { low_pressure_preference: 3 }
-    },
     q2a: {
         class: { shared_context_reliance: 2 },
         group_assignment: { shared_context_reliance: 3 },
@@ -50,17 +43,6 @@ const SCORING_CONFIG = {
         "4": { initiation_confidence: 3, low_pressure_preference: 0 },
         "5": { initiation_confidence: 4, low_pressure_preference: 0 }
     },
-    q3: {
-        classes: { social_openness: 1, shared_context_reliance: 2 },
-        group_assignments: { social_openness: 1, shared_context_reliance: 3 },
-        clubs: { social_openness: 1, shared_context_reliance: 2 },
-        events: { social_openness: 1, shared_context_reliance: 1 },
-        mutual_friends: { social_openness: 1, shared_context_reliance: 2 },
-        shared_hobbies: { social_openness: 1, shared_context_reliance: 2 },
-        hostel_common_spaces: { social_openness: 1, shared_context_reliance: 1 },
-        online_communities: { social_openness: 1, shared_context_reliance: 1 },
-        _caps: { social_openness: 4, shared_context_reliance: 5 }
-    },
     q4: {
         yes: { low_pressure_preference: 1, shared_context_reliance: 1 },
         sometimes: { low_pressure_preference: 1, shared_context_reliance: 1 },
@@ -75,6 +57,14 @@ const SCORING_CONFIG = {
         online_interactions: { low_pressure_preference: 2, digital_comfort: 3 },
         common_interest: { shared_context_reliance: 2 },
         _caps: { low_pressure_preference: 5, shared_context_reliance: 4, digital_comfort: 3 }
+    },
+    q4b: {
+        shared_purpose: { shared_context_reliance: 2 },
+        natural_start: { initiation_confidence: 1 },
+        less_pressure: { low_pressure_preference: 2 },
+        common_ground: { shared_context_reliance: 1 },
+        small_group: { low_pressure_preference: 1 },
+        _caps: { shared_context_reliance: 3, low_pressure_preference: 3 }
     },
     q5: {
         yes: { initiation_confidence: 0, low_pressure_preference: 2 },
@@ -111,16 +101,6 @@ const SCORING_CONFIG = {
         approachable: { social_openness: 2, shared_context_reliance: 0 },
         _caps: { social_openness: 4, shared_context_reliance: 4 }
     },
-    q6a: {
-        shared_interest: { social_openness: 2, shared_context_reliance: 2 },
-        academic_reason: { social_openness: 1, shared_context_reliance: 2 },
-        mutual_friend: { social_openness: 1, shared_context_reliance: 1 },
-        curiosity: { social_openness: 3, shared_context_reliance: 0 },
-        need_for_company: { social_openness: 2, shared_context_reliance: 0 },
-        networking: { social_openness: 2, shared_context_reliance: 0 },
-        group_activity: { social_openness: 1, shared_context_reliance: 3 },
-        approachable: { social_openness: 2, shared_context_reliance: 0 }
-    },
     q7: {
         start_quickly: { initiation_confidence: 4, low_pressure_preference: 0, social_openness: 3 },
         clear_reason: { initiation_confidence: 2, low_pressure_preference: 0, social_openness: 2 },
@@ -128,12 +108,21 @@ const SCORING_CONFIG = {
         observe_first: { initiation_confidence: 1, low_pressure_preference: 3, social_openness: 1 },
         avoid_interacting: { initiation_confidence: 0, low_pressure_preference: 2, social_openness: 0 }
     },
+    q7a: { experience: { initiation_confidence: 2 }, natural: { initiation_confidence: 2 }, approachable: { initiation_confidence: 1 } },
+    q7b: { task_help: { shared_context_reliance: 2 }, shared_obs: { social_openness: 1 }, mutual_friend: { shared_context_reliance: 1 } },
+    q7c: { no_ice: { low_pressure_preference: 2 }, interest: { social_openness: 1 }, passive: { low_pressure_preference: 1 } },
+    q7d: { approachable: { low_pressure_preference: 1 }, common_interest: { shared_context_reliance: 2 }, reason: { shared_context_reliance: 1 } },
+    q7e: { groups: { low_pressure_preference: 2 }, fear: { initiation_confidence: 0 }, timing: { low_pressure_preference: 1 } },
     q8: {
         one_on_one: { low_pressure_preference: 3, shared_context_reliance: 0 },
         group_activity: { low_pressure_preference: 1, shared_context_reliance: 3 },
         depends: { low_pressure_preference: 1, shared_context_reliance: 1 },
         neither_easy: { low_pressure_preference: 2, shared_context_reliance: 0 }
     },
+    q8a: { depth: { low_pressure_preference: 2 }, noise: { low_pressure_preference: 1 }, pressure: { low_pressure_preference: 1 } },
+    q8b: { task_natural: { shared_context_reliance: 2 }, less_init_pressure: { low_pressure_preference: 2 }, organic: { initiation_confidence: 1 } },
+    q8c: { mood: { low_pressure_preference: 1 }, size: { low_pressure_preference: 1 }, friends: { shared_context_reliance: 1 } },
+    q8d: { anxiety_help: { low_pressure_preference: 2 }, structured: { shared_context_reliance: 2 }, online_bridge: { digital_comfort: 2 } },
     q9: {
         online: { digital_comfort: 4, low_pressure_preference: 2 },
         in_person: { digital_comfort: 0, low_pressure_preference: 0 },

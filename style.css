@@ -325,7 +325,53 @@ hr.section-divider {
 
 .form-textarea {
     resize: vertical;
-    min-height: 88px;
+    min-height: 100px;
+}
+
+/* ── Mic / Speech Logic ── */
+.mic-container {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-mic {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--trans-fast);
+}
+
+.btn-mic.recording {
+    background: rgba(255, 59, 48, 0.1) !important;
+    color: var(--red) !important;
+    border-color: var(--red) !important;
+    animation: micPulse 1.5s infinite var(--ease);
+}
+
+@keyframes micPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px rgba(255, 59, 48, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+    }
+}
+
+.mic-status {
+    font-size: 13px;
+    color: var(--label-secondary);
+    font-weight: 500;
 }
 
 .char-counter {

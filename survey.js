@@ -182,13 +182,27 @@ const SURVEY_PLAN = {
     q2e: {
         section: 'Section B — Recent real interaction',
         title: 'What made that interaction uncomfortable?',
-        type: 'long_text',
+        type: 'multi_select',
+        options: [
+            { id: 'awkward', label: 'Felt awkward or forced' },
+            { id: 'no_common', label: "Couldn't find common interests" },
+            { id: 'intense', label: "The setting was too intense/loud" },
+            { id: 'judged', label: 'Worried about being judged' },
+            { id: 'other', label: 'Other' }
+        ],
         next: () => 'q4'
     },
     q2f: {
         section: 'Section B — Recent real interaction',
         title: 'What made that interaction feel comfortable or easy?',
-        type: 'long_text',
+        type: 'multi_select',
+        options: [
+            { id: 'natural', label: 'Conversation flowed naturally' },
+            { id: 'friendly', label: 'The other person was friendly/helpful' },
+            { id: 'topic', label: 'Quickly found a common topic' },
+            { id: 'relaxed', label: 'The environment was relaxed' },
+            { id: 'other', label: 'Other' }
+        ],
         next: () => 'q4'
     },
 
@@ -222,7 +236,15 @@ const SURVEY_PLAN = {
     q4b: {
         section: 'Section C — Contexts and natural interaction',
         title: 'Why do these situations feel easier?',
-        type: 'long_text',
+        type: 'multi_select',
+        options: [
+            { id: 'shared_purpose', label: 'There is a shared purpose' },
+            { id: 'natural_start', label: 'Conversation starts naturally' },
+            { id: 'less_pressure', label: 'Less pressure' },
+            { id: 'common_ground', label: 'Easier to find common ground' },
+            { id: 'small_group', label: 'Smaller group size' },
+            { id: 'other', label: 'Other' }
+        ],
         next: () => 'q5'
     },
 
@@ -308,11 +330,67 @@ const SURVEY_PLAN = {
             return 'q8';
         }
     },
-    q7a: { section: 'Section E — Behaviour patterns', title: 'What makes you comfortable initiating conversations?', type: 'long_text', next: () => 'q8' },
-    q7b: { section: 'Section E — Behaviour patterns', title: 'What kind of reason usually helps you start interacting?', type: 'long_text', next: () => 'q8' },
-    q7c: { section: 'Section E — Behaviour patterns', title: 'What makes it easier when the other person starts first?', type: 'long_text', next: () => 'q8' },
-    q7d: { section: 'Section E — Behaviour patterns', title: 'What do you usually look for before deciding to interact?', type: 'long_text', next: () => 'q8' },
-    q7e: { section: 'Section E — Behaviour patterns', title: 'What usually stops you from engaging?', type: 'long_text', next: () => 'q8' },
+    q7a: {
+        section: 'Section E — Behaviour patterns',
+        title: 'What makes you comfortable initiating conversations?',
+        type: 'multi_select',
+        options: [
+            { id: 'experience', label: 'I have social practice/experience' },
+            { id: 'natural', label: 'I am naturally outgoing' },
+            { id: 'approachable', label: 'People respond well to me' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q8'
+    },
+    q7b: {
+        section: 'Section E — Behaviour patterns',
+        title: 'What kind of reason usually helps you start interacting?',
+        type: 'multi_select',
+        options: [
+            { id: 'task_help', label: 'A specific task or help needed' },
+            { id: 'shared_obs', label: 'A shared observation about the setting' },
+            { id: 'mutual_friend', label: 'A mutual acquaintance' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q8'
+    },
+    q7c: {
+        section: 'Section E — Behaviour patterns',
+        title: 'What makes it easier when the other person starts first?',
+        type: 'multi_select',
+        options: [
+            { id: 'no_ice', label: 'Removes the pressure of breaking the ice' },
+            { id: 'interest', label: 'Signals they are interested in talking' },
+            { id: 'passive', label: 'I prefer responding over initiating' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q8'
+    },
+    q7d: {
+        section: 'Section E — Behaviour patterns',
+        title: 'Before starting a conversation, what do you usually look for?',
+        type: 'multi_select',
+        options: [
+            { id: 'approachable', label: 'If the person seems approachable' },
+            { id: 'common_interest', label: 'If we share something in common' },
+            { id: 'reason', label: 'If there is a reason to talk' },
+            { id: 'open', label: 'If they seem open to conversation' },
+            { id: 'natural', label: 'If the situation feels natural' }
+        ],
+        next: () => 'q8'
+    },
+    q7e: {
+        section: 'Section E — Behaviour patterns',
+        title: 'What usually stops you from engaging?',
+        type: 'multi_select',
+        options: [
+            { id: 'groups', label: 'People already seem busy/in closed groups' },
+            { id: 'fear', label: 'Fear of interrupting or rejection' },
+            { id: 'timing', label: 'The timing doesn\'t feel right' },
+            { id: 'energy', label: 'Low social energy at the moment' }
+        ],
+        next: () => 'q8'
+    },
 
     q8: {
         section: 'Section E — Behaviour patterns',
@@ -332,10 +410,54 @@ const SURVEY_PLAN = {
             return 'q9';
         }
     },
-    q8a: { section: 'Section E — Behaviour patterns', title: 'Why does one-on-one feel easier for you?', type: 'long_text', next: () => 'q9' },
-    q8b: { section: 'Section E — Behaviour patterns', title: 'Why does group activity feel easier for you?', type: 'long_text', next: () => 'q9' },
-    q8c: { section: 'Section E — Behaviour patterns', title: 'What makes the situation matter?', type: 'long_text', next: () => 'q9' },
-    q8d: { section: 'Section E — Behaviour patterns', title: 'What would make social interaction feel easier for you?', type: 'long_text', next: () => 'q9' },
+    q8a: {
+        section: 'Section E — Behaviour patterns',
+        title: 'Why does one-on-one feel easier for you?',
+        type: 'multi_select',
+        options: [
+            { id: 'depth', label: 'Easier to focus on one person' },
+            { id: 'noise', label: 'Less social noise or distractions' },
+            { id: 'pressure', label: 'Lower pressure than a group setting' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q9'
+    },
+    q8b: {
+        section: 'Section E — Behaviour patterns',
+        title: 'Why does group activity make conversation easier?',
+        type: 'multi_select',
+        options: [
+            { id: 'task_natural', label: 'Shared task makes talking natural' },
+            { id: 'less_init_pressure', label: 'Less pressure to initiate' },
+            { id: 'observe_first', label: 'Easier to observe first' },
+            { id: 'organic', label: 'Conversation starts organically' }
+        ],
+        next: () => 'q9'
+    },
+    q8c: {
+        section: 'Section E — Behaviour patterns',
+        title: 'What makes the situation matter?',
+        type: 'multi_select',
+        options: [
+            { id: 'mood', label: 'Depends on my mood/energy level' },
+            { id: 'size', label: 'Depends on the size of the group' },
+            { id: 'friends', label: 'Depends on if I know anyone else' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q9'
+    },
+    q8d: {
+        section: 'Section E — Behaviour patterns',
+        title: 'What would make social interaction feel easier for you?',
+        type: 'multi_select',
+        options: [
+            { id: 'anxiety_help', label: 'Tools to manage social anxiety' },
+            { id: 'structured', label: 'More structured social events' },
+            { id: 'online_bridge', label: 'Easier online-to-offline transitions' },
+            { id: 'interest_match', label: 'Better ways to find interest matches' }
+        ],
+        next: () => 'q9'
+    },
 
     // ── SECTION F: Digital interaction relevance ──
     q9: {
@@ -383,8 +505,30 @@ const SURVEY_PLAN = {
         ],
         next: () => 'q10'
     },
-    q9c: { section: 'Section F — Digital interaction relevance', title: 'In what situations does each one work better?', type: 'long_text', next: () => 'q10' },
-    q9d: { section: 'Section F — Digital interaction relevance', title: 'What makes both online and in-person interaction difficult?', type: 'long_text', next: () => 'q10' },
+    q9c: {
+        section: 'Section F — Digital interaction relevance',
+        title: 'In what situations does each one work better?',
+        type: 'multi_select',
+        options: [
+            { id: 'ice_breaking', label: 'Digital for ice-breaking, person for deepening' },
+            { id: 'natural_flow', label: 'In-person for quick/natural flow' },
+            { id: 'low_judgment', label: 'Digital for low-judgment/pressure' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q10'
+    },
+    q9d: {
+        section: 'Section F — Digital interaction relevance',
+        title: 'What makes both online and in-person interaction difficult?',
+        type: 'multi_select',
+        options: [
+            { id: 'fundamental', label: 'Building new connections is fundamentally hard' },
+            { id: 'initiation', label: 'The first move is difficult in any medium' },
+            { id: 'matching', label: 'Finding someone who truly matches my interests' },
+            { id: 'other', label: 'Other' }
+        ],
+        next: () => 'q10'
+    },
 
     // ── SECTION Wrap-up ──
     q10: {
@@ -604,7 +748,17 @@ function renderInputGroup(qId, ObjectDetails) {
     }
 
     if (ObjectDetails.type === 'long_text') {
-        return `<textarea class="form-textarea" id="input_${qId}" oninput="cacheValue('${qId}', this.value)" placeholder="${ObjectDetails.prompt || 'Provide details...'}"></textarea>`;
+        return `
+        <div class="textarea-wrapper">
+            <textarea class="form-textarea" id="input_${qId}" oninput="cacheValue('${qId}', this.value)" placeholder="${ObjectDetails.prompt || 'Provide details...'}"></textarea>
+            <div class="mic-container">
+                <button class="btn btn-ghost btn-mic" id="mic_${qId}" onclick="toggleVoice('${qId}')">
+                    <span class="mic-icon">🎤</span>
+                    <span class="mic-label">Speak your answer</span>
+                </button>
+                <div id="mic-status_${qId}" class="mic-status"></div>
+            </div>
+        </div>`;
     }
 
     return '';
@@ -890,4 +1044,57 @@ window.submitFeedbackUI = async () => {
             <p>Your feedback has been linked to your session. This helps us ensure our behavioral models are accurate for the student community.</p>
         </div>
     `;
+};
+/* ══════════════════════════════════════════════════
+   SPEECH TO TEXT
+════════════════════════════════════════════════════ */
+let recognition = null;
+window.toggleVoice = function (qId) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Speech recognition is not supported in your browser. Please try Chrome or Safari.");
+        return;
+    }
+
+    const textarea = document.getElementById(`input_${qId}`);
+    const status = document.getElementById(`mic-status_${qId}`);
+    const btn = document.getElementById(`mic_${qId}`);
+
+    if (recognition) {
+        recognition.stop();
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+        btn.classList.add('recording');
+        status.textContent = 'Listening...';
+    };
+
+    recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        textarea.value = transcript;
+        cacheValue(qId, transcript);
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        status.textContent = 'Error: ' + event.error;
+        btn.classList.remove('recording');
+    };
+
+    recognition.onend = () => {
+        recognition = null;
+        btn.classList.remove('recording');
+        status.textContent = '';
+    };
+
+    recognition.start();
 };
