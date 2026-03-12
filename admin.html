@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Survey Admin – Campus Research</title>
     <link rel="stylesheet" href="style.css" />
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- SheetJS for Excel export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -509,17 +507,18 @@
                     <h1>Survey Analytics</h1>
                 </div>
                 <nav class="sidebar-nav" id="sidebar-nav">
-                    <button class="nav-btn active" data-page="dashboard_01">Overview</button>
-                    <button class="nav-btn" data-page="dashboard_patterns">Behaviour Patterns</button>
-                    <button class="nav-btn" data-page="dashboard_02">Problem Validation</button>
-                    <button class="nav-btn" data-page="dashboard_03">Primary User & Segments</button>
-                    <button class="nav-btn" data-page="dashboard_04">Initiation Barriers</button>
-                    <button class="nav-btn" data-page="dashboard_05">Context & Prefs</button>
-                    <button class="nav-btn" data-page="dashboard_06">Safety & Trust</button>
-                    <button class="nav-btn" data-page="dashboard_07">Spontaneity</button>
-                    <button class="nav-btn" data-page="research_answers">Research Answers</button>
-                    <button class="nav-btn" data-page="unsupported_list">Unsupported Questions</button>
-                    <button class="nav-btn" data-page="response_table">Raw Data</button>
+                    <button class="nav-btn active" data-page="unified_analysis">1. Master Question Analysis</button>
+                    <button class="nav-btn" data-page="respondent_profile">2. Respondent Profile</button>
+                    <button class="nav-btn" data-page="initiation_insights">3. Initiation Insights (RQ1)</button>
+                    <button class="nav-btn" data-page="context_insights">4. Interaction Context (RQ2)</button>
+                    <button class="nav-btn" data-page="barriers_insights">5. Barriers & Hesitation (RQ3)</button>
+                    <button class="nav-btn" data-page="motivation_insights">6. Motivation Insights</button>
+                    <button class="nav-btn" data-page="trait_insights">7. Social Styles & Traits</button>
+                    <button class="nav-btn" data-page="qualitative_themes">8. Qualitative Themes</button>
+                    <button class="nav-btn" data-page="hmw_validation">9. HMW Validation</button>
+                    <button class="nav-btn" data-page="item_analysis">10. Question Performance</button>
+                    <div style="height: 1px; background: rgba(0,0,0,0.05); margin: 12px 0;"></div>
+                    <button class="nav-btn" data-page="response_table">Raw Data Table</button>
                 </nav>
                 <div class="export-bar"
                     style="margin-top:auto; padding-top:20px; border-top: 1px solid rgba(0,0,0,0.1);">
@@ -530,6 +529,34 @@
             </aside>
 
             <main class="research-content" id="research-content">
+                <!-- Global Filter Bar -->
+                <div class="filter-bar"
+                    style="background:#fff; padding:16px 20px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                    <div
+                        style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; margin-right:8px;">
+                        Filters:</div>
+                    <select id="filter-year" class="form-input"
+                        style="width:auto; height:36px; padding:4px 12px; font-size:13px; margin:0;">
+                        <option value="">All Years</option>
+                    </select>
+                    <select id="filter-residence" class="form-input"
+                        style="width:auto; height:36px; padding:4px 12px; font-size:13px; margin:0;">
+                        <option value="">All Locations</option>
+                    </select>
+                    <select id="filter-gender" class="form-input"
+                        style="width:auto; height:36px; padding:4px 12px; font-size:13px; margin:0;">
+                        <option value="">All Genders</option>
+                    </select>
+                    <select id="filter-trait" class="form-input"
+                        style="width:auto; height:36px; padding:4px 12px; font-size:13px; margin:0;">
+                        <option value="">All Traits</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="applyFilters()"
+                        style="height:36px; padding:0 16px; font-size:13px;">Apply</button>
+                    <button class="btn btn-ghost" onclick="resetFilters()"
+                        style="height:36px; padding:0 16px; font-size:13px;">Reset</button>
+                </div>
+
                 <!-- Dynamic content will be injected here -->
                 <div id="page-container"></div>
             </main>
@@ -543,6 +570,7 @@
     <script src="instructions.js"></script>
     <script src="analysis-engine.js"></script>
     <script src="research-answers.js"></script>
+    <script src="question-metadata.js"></script>
     <script src="admin.js"></script>
 </body>
 

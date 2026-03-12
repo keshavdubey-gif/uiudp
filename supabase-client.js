@@ -282,20 +282,97 @@ async function updateFeedbackInSupabase(recordId, feedback) {
  ═══════════════════════════════════════════════════════ */
 
 /**
- * Fetches all responses. Used in admin.js
+ * Fetches all responses from both the traditional table and the JSONB events table,
+ * merging them into a single dataset for unified analysis.
  */
 async function fetchFromSupabase() {
     const sb = getSupabase();
     if (!sb) return null;
 
     try {
-        const { data, error } = await sb
+        console.log('[Supabase] Fetching from both datasets...');
+
+        // 1. Fetch from survey_events_json (Adaptive Survey)
+        const { data: adaptiveData, error: adaptiveError } = await sb
+            .from('survey_events_json')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (adaptiveError) {
+            console.warn('[Supabase] Error fetching adaptive data:', adaptiveError);
+        }
+
+        // 2. Fetch from survey_responses (Traditional Survey)
+        const { data: traditionalData, error: traditionalError } = await sb
             .from('survey_responses')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data;
+        if (traditionalError) {
+            console.warn('[Supabase] Error fetching traditional data:', traditionalError);
+        }
+
+        const combined = [];
+
+        // 3. Process Adaptive Data
+        if (adaptiveData) {
+            adaptiveData.forEach(row => {
+                const flat = {
+                    id: row.id,
+                    source: 'adaptive',
+                    created_at: row.created_at,
+                    age_group: row.age_group,
+                    year_of_study: row.year_of_study,
+                    program: row.program,
+                    gender: row.gender,
+                    residence: row.residence,
+                    completion_time_seconds: row.completion_time_seconds,
+                    feedback_rating: row.feedback_rating,
+                    feedback_relatable: row.feedback_relatable,
+                    feedback_relevant: row.feedback_relevant,
+                    trait_id: row.trait_id,
+                    suspect_submission: false
+                };
+
+                if (row.payload && row.payload.answers) {
+                    row.payload.answers.forEach(ans => {
+                        const key = ans.question_code.toLowerCase();
+                        flat[key] = ans.answer;
+                    });
+                }
+
+                if (row.payload && row.payload.computed_profile && row.payload.computed_profile.scores) {
+                    Object.entries(row.payload.computed_profile.scores).forEach(([trait, score]) => {
+                        flat[`trait_${trait}`] = score;
+                    });
+                    flat.primary_style = row.payload.computed_profile.primary_style;
+                }
+                combined.push(flat);
+            });
+        }
+
+        // 4. Process Traditional Data
+        if (traditionalData) {
+            traditionalData.forEach(row => {
+                const flat = {
+                    ...row,
+                    source: 'traditional',
+                    trait_ER: row.trait_er,
+                    trait_CR: row.trait_cr,
+                    trait_SI: row.trait_si,
+                    trait_PF: row.trait_pf,
+                    trait_GP: row.trait_gp,
+                    trait_SE: row.trait_se,
+                    trait_ED: row.trait_ed,
+                    primary_style: row.archetype
+                };
+                combined.push(flat);
+            });
+        }
+
+        console.log(`[Supabase] Combined dataset size: ${combined.length} (${adaptiveData?.length || 0} adaptive, ${traditionalData?.length || 0} traditional)`);
+        return combined.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
     } catch (err) {
         console.error('[Supabase] Fetch failed:', err);
         return null;

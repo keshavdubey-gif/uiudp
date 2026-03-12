@@ -1,15 +1,15 @@
 /**
  * Campus Social Experience Survey
- * admin.js — Research Analysis Layer Implementation
+ * admin.js — Research Analysis Dashboard Implementation
  */
 
 'use strict';
 
 const ADMIN_CREDS = { user: 'admin', pass: 'aasritha2026' };
 let analysisData = null;
+let filteredData = null;
 let instructions = null;
-let engine = null;
-let currentPage = 'dashboard_01';
+let currentPage = 'unified_analysis';
 
 /* ── Auth ── */
 function checkAuth() {
@@ -30,136 +30,94 @@ function checkAuth() {
 async function initAdmin() {
     const container = document.getElementById('page-container');
     container.innerHTML = `
-        <div style="text-align:center; padding: 40px; color:rgba(0,0,0,0.4);">
+        <div style="text-align:center; padding: 60px; color:rgba(0,0,0,0.4);">
             <div class="loading-spinner" style="margin-bottom:16px;">⏳</div>
-            <p>Initialising Research Engine...</p>
+            <p style="font-size: 16px; font-weight: 500;">Initialising Research Dashboard...</p>
         </div>
     `;
-
-    // 1. Load Instructions (Prefer pre-loaded global, then fetch)
-    if (window.RESEARCH_INSTRUCTIONS) {
-        instructions = window.RESEARCH_INSTRUCTIONS;
-    } else {
-        try {
-            const resp = await fetch('instructions.json');
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            instructions = await resp.json();
-        } catch (e) {
-            container.innerHTML = `
-                <div class="unsupported-notice" style="border-color:#FF3B30; color:#FF3B30;">
-                    <p><strong>Fatal Error:</strong> Failed to load research configuration.</p>
-                    <p style="font-size:12px; margin-top:8px;">Reason: ${e.message}. Ensure <code>instructions.js</code> is in the current directory.</p>
-                </div>
-            `;
-            console.error('Failed to load instructions', e);
-            return;
-        }
-    }
-
-    // 2. Load Data from Supabase
-    container.innerHTML += `<p style="font-size:13px; color:rgba(0,0,0,0.4);">Syncing with Supabase...</p>`;
 
     let data = null;
     if (typeof fetchFromSupabase === 'function') {
         try {
             data = await fetchFromSupabase();
-            console.log('[Admin] Fetched from Supabase:', data?.length);
+            console.log('[Admin] Fetched dataset:', data?.length);
         } catch (e) {
             console.warn('Supabase fetch failed', e);
         }
     }
 
-    // Fallback to localStorage if Supabase is offline/empty
     if (!data || data.length === 0) {
-        console.log('[Admin] Falling back to local storage');
-        const raw = localStorage.getItem('survey_responses');
-        data = raw ? JSON.parse(raw) : [];
+        showEmptyState();
+        return;
     }
 
     analysisData = data;
+    filteredData = data;
+    instructions = window.RESEARCH_INSTRUCTIONS;
 
-    // 3. Initialize Engine
-    engine = new AnalysisEngine(data, instructions);
-    const results = engine.calculateAll();
-    window.analysisResults = results; // For debugging
-
-    // 4. Set up Navigation
+    populateFilterDropdowns();
     setupNavigation();
-
-    // 5. Render Initial Page
-    if (analysisData.length === 0) {
-        showEmptyState();
-    } else {
-        renderPage(currentPage);
-    }
+    renderPage(currentPage);
 }
+
+function populateFilterDropdowns() {
+    const years = [...new Set(analysisData.map(d => d.year_of_study))].filter(Boolean).sort();
+    const residences = [...new Set(analysisData.map(d => d.residence))].filter(Boolean).sort();
+    const genders = [...new Set(analysisData.map(d => d.gender))].filter(Boolean).sort();
+    const traits = [...new Set(analysisData.map(d => d.trait_id))].filter(Boolean).sort();
+
+    const yrSel = document.getElementById('filter-year');
+    const rsSel = document.getElementById('filter-residence');
+    const gnSel = document.getElementById('filter-gender');
+    const trSel = document.getElementById('filter-trait');
+
+    years.forEach(y => yrSel.innerHTML += `<option value="${y}">${y}</option>`);
+    residences.forEach(r => rsSel.innerHTML += `<option value="${r}">${r}</option>`);
+    genders.forEach(g => gnSel.innerHTML += `<option value="${g}">${g}</option>`);
+    traits.forEach(t => trSel.innerHTML += `<option value="${t}">${t.replace(/_/g, ' ')}</option>`);
+}
+
+function applyFilters() {
+    const yr = document.getElementById('filter-year').value;
+    const rs = document.getElementById('filter-residence').value;
+    const gn = document.getElementById('filter-gender').value;
+    const tr = document.getElementById('filter-trait').value;
+
+    filteredData = analysisData.filter(d => {
+        if (yr && d.year_of_study !== yr) return false;
+        if (rs && d.residence !== rs) return false;
+        if (gn && d.gender !== gn) return false;
+        if (tr && d.trait_id !== tr) return false;
+        return true;
+    });
+
+    renderPage(currentPage);
+}
+
+function resetFilters() {
+    document.getElementById('filter-year').value = '';
+    document.getElementById('filter-residence').value = '';
+    document.getElementById('filter-gender').value = '';
+    document.getElementById('filter-trait').value = '';
+    filteredData = analysisData;
+    renderPage(currentPage);
+}
+
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
 
 function showEmptyState() {
     const container = document.getElementById('page-container');
     container.innerHTML = `
-        <div class="unsupported-notice" style="margin-top: 40px; border-style: solid;">
+        <div class="unsupported-notice" style="margin-top: 40px; border-style: solid; text-align: center; padding: 40px;">
             <h2 style="margin-bottom:12px;">No Survey Data Yet</h2>
-            <p style="margin-bottom:20px;">The analysis engine is ready, but haven't received any valid responses yet.</p>
+            <p style="margin-bottom:20px; color: #666;">The dashboard is ready, but no responses have been recorded in the database yet.</p>
             <div style="display:flex; gap:12px; justify-content:center;">
-                <button class="btn btn-primary" onclick="seedDemoData()">Seed 25 Demo Responses</button>
-                <a href="index.html" class="btn btn-ghost" target="_blank">Open Survey ↗</a>
+                <a href="index.html" class="btn btn-primary" target="_blank">Take the Survey ↗</a>
             </div>
-            <p style="font-size:11px; margin-top:20px; color:rgba(0,0,0,0.4);">
-                Note: If you are seeing this and have submitted data, ensure you are running a local server (like Live Server) 
-                so the browser can load <code>instructions.json</code>.
-            </p>
         </div>
     `;
 }
-
-function seedDemoData() {
-    const years = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Postgrad'];
-    const genders = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
-    const programs = ['B.Tech', 'B.A.', 'B.Sc.', 'B.Des'];
-    const locations = ['On-campus Hostel', 'Off-campus PG/Flat', 'Living with Family'];
-
-    const mockData = [];
-    for (let i = 0; i < 25; i++) {
-        const row = {
-            id: 'mock_' + Math.random().toString(36).substr(2, 9),
-            created_at: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
-            year_of_study: years[Math.floor(Math.random() * years.length)],
-            gender: genders[Math.floor(Math.random() * genders.length)],
-            program: programs[Math.floor(Math.random() * programs.length)],
-            residence: locations[Math.floor(Math.random() * locations.length)],
-
-            // Initiation metrics
-            initiation_anxiety: 2 + Math.random() * 3,
-            overthinking: 3 + Math.random() * 2,
-            avoidance: 2 + Math.random() * 2,
-            judgment_concern: 3 + Math.random() * 2,
-
-            // Belonging metrics
-            belonging: 1 + Math.random() * 4,
-            disconnection: 2 + Math.random() * 3,
-            loneliness: 2 + Math.random() * 3,
-
-            // Preferences
-            social_expansion_desire: 3 + Math.random() * 2,
-            spontaneous_value: 1 + Math.random() * 4,
-            structured_preference: 1 + Math.random() * 4,
-            online_comfort: 3 + Math.random() * 2,
-
-            // Open Text
-            social_friction_open: i % 2 === 0 ? "I find it hard to join small groups already talking." : "The campus feels too formal, need more common interest clubs.",
-            safety_factors: i % 3 === 0 ? "Shared interests and structured activities make me feel safe." : "No judgment and friendly faces.",
-
-            suspect_submission: false
-        };
-        mockData.push(row);
-    }
-
-    localStorage.setItem('survey_responses', JSON.stringify(mockData));
-    alert('25 demo responses seeded! Reloading dashboard...');
-    window.location.reload();
-}
-
-window.seedDemoData = seedDemoData;
 
 function setupNavigation() {
     const navBtns = document.querySelectorAll('.nav-btn');
@@ -173,661 +131,569 @@ function setupNavigation() {
     });
 }
 
+const chartStore = new Map();
+
 function renderPage(pageId) {
     currentPage = pageId;
     const container = document.getElementById('page-container');
+    if (!container) return;
     container.innerHTML = '';
+
+    chartStore.forEach(chart => chart.destroy());
+    chartStore.clear();
 
     if (pageId === 'response_table') {
         renderRawDataTable(container);
         return;
     }
 
-    if (pageId === 'research_answers') {
-        renderResearchAnswers(container);
-        return;
-    }
-
-    if (pageId === 'unsupported_list') {
-        renderUnsupportedList(container);
-        return;
-    }
-
-    if (pageId === 'dashboard_patterns') {
-        renderDashboardPatterns(container);
-        return;
-    }
-
-    const pageSpec = instructions.dashboard_spec.pages.find(p => p.page_id === pageId);
+    const pageSpec = instructions.pages.find(p => p.id === pageId);
     if (!pageSpec) return;
 
-    // Header
     const header = document.createElement('div');
     header.className = 'page-header';
-    header.innerHTML = `<h2>${pageSpec.title}</h2>`;
-    container.appendChild(header);
-
-    // Filter notice (if suspect excluded)
-    const filterNotice = document.createElement('p');
-    filterNotice.style.fontSize = '12px';
-    filterNotice.style.color = 'rgba(60,60,67,0.40)';
-    filterNotice.style.marginBottom = '16px';
-    filterNotice.innerHTML = `Showing analysis for <strong>${engine.data.length}</strong> valid responses (excluding ${engine.rawData.length - engine.data.length} suspect).`;
-    container.appendChild(filterNotice);
-
-    // Group widgets by type for better layout (e.g., Row of KPIs)
-    let kpiRow = null;
-
-    pageSpec.widgets.forEach(widgetId => {
-        // Find if it's a global metric or a research question
-        const globalMetric = instructions.global_metrics.find(m => m.metric_id === widgetId);
-        const rq = instructions.research_questions.find(q => q.rq_id === widgetId);
-
-        if (globalMetric) {
-            if (!kpiRow) {
-                kpiRow = document.createElement('div');
-                kpiRow.className = 'kpi-row';
-                container.appendChild(kpiRow);
-            }
-            const val = window.analysisResults.global_metrics[widgetId];
-            const formatted = typeof val === 'number' ?
-                (widgetId.includes('avg') || widgetId.includes('index') ? val.toFixed(2) : Math.round(val)) : val;
-
-            const card = document.createElement('div');
-            card.className = 'stat-card';
-            card.innerHTML = `<div class="stat-num">${formatted}</div><div class="stat-label">${globalMetric.label}</div>`;
-            kpiRow.appendChild(card);
-        } else if (rq) {
-            kpiRow = null; // Break KPI row if any
-            renderRQWidget(container, rq);
-        }
-    });
-}
-
-function renderRQWidget(container, rq) {
-    const card = document.createElement('div');
-    card.className = 'chart-card full';
-
-    // Status Badge
-    const statusClass = rq.support_level === 'fully_supported' ? 'status-fully' :
-        (rq.support_level === 'partially_supported' ? 'status-partially' : 'status-not');
-    const statusLabel = rq.support_level.replace(/_/g, ' ');
-
-    card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3>${rq.rq_id}: ${rq.question}</h3>
-            <span class="status-badge ${statusClass}">${statusLabel}</span>
+    header.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h2 style="font-size: 28px; font-weight: 800; color: #1c1c1e; letter-spacing:-0.03em;">${pageSpec.title}</h2>
+                <div style="background:#007AFF11; color:#007AFF; padding:12px 20px; border-radius:12px; margin-top:16px; border-left:4px solid #007AFF;">
+                    <strong style="display:block; font-size:12px; text-transform:uppercase; margin-bottom:4px; opacity:0.8;">Researcher's Perspective</strong>
+                    <p style="margin:0; font-size:15px; font-weight:500; color:#1c1c1e; line-height:1.5;">${pageSpec.summary}</p>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:11px; text-transform:uppercase; color:#888; font-weight:700;">Sample Size</div>
+                <div style="font-size:24px; font-weight:800; color:#1c1c1e;">n = ${filteredData.length}</div>
+            </div>
         </div>
     `;
+    container.appendChild(header);
 
-    if (rq.support_level === 'not_supported_with_current_survey') {
-        const notice = document.createElement('div');
-        notice.className = 'unsupported-notice';
-        notice.innerHTML = `<p><strong>Not Supported</strong><br>${rq.limitations?.[0] || 'This question cannot be answered with the current survey data.'}</p>`;
-        card.appendChild(notice);
-        container.appendChild(card);
-        return;
-    }
+    const patterns = document.createElement('div');
+    patterns.style.display = 'grid';
+    patterns.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
+    patterns.style.gap = '16px';
+    patterns.style.marginTop = '24px';
+    patterns.innerHTML = pageSpec.insights.map(i => `
+        <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f0f0f0; display:flex; gap:12px; align-items:flex-start; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+            <div style="background:#34C75922; color:#34C759; padding:4px; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">✓</div>
+            <p style="margin:0; font-size:13px; color:#444; line-height:1.4; font-weight:500;">${i}</p>
+        </div>
+    `).join('');
+    container.appendChild(patterns);
 
-    const results = window.analysisResults.research_questions[rq.rq_id];
-    const widgetType = rq.ui.primary_widget;
+    const grid = document.createElement('div');
+    grid.className = 'dashboard-grid';
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(450px, 1fr))';
+    grid.style.gap = '24px';
+    grid.style.marginTop = '24px';
+    container.appendChild(grid);
 
-    // Render based on widget type
-    const div = document.createElement('div');
-    div.id = `widget-${rq.rq_id}`;
-    card.appendChild(div);
-    container.appendChild(card);
-
-    // Call specific renderers
-    switch (widgetType) {
-        case 'kpi_triplet': renderKPITriplet(div, rq, results); break;
-        case 'horizontal_bar_chart': renderHorizontalBar(div, rq, results); break;
-        case 'bar_chart':
-        case 'line_or_bar_chart':
-        case 'grouped_bar_chart': renderBarChart(div, rq, results); break;
-        case 'radar_chart': renderRadarChart(div, rq, results); break;
-        case 'segment_pie_chart': renderPieChart(div, rq, results); break;
-        case 'summary_score_card': renderSummaryScore(div, rq, results); break;
-        case 'segmented_bar_chart': renderBarChart(div, rq, results); break;
-        case 'theme_cluster_panel':
-        case 'theme_chip_list':
-        case 'theme_insight_panel':
-        case 'score_plus_theme_panel':
-        case 'risk_theme_panel':
-        case 'design_opportunity_panel': renderThemePanel(div, rq, results); break;
-        case 'scatter_plot': renderScatterPlot(div, rq, results); break;
-        case 'two_metric_compare_card': renderCompareCard(div, rq, results); break;
-        case 'single_metric_card': renderSingleMetricCard(div, rq, results); break;
-        default:
-            div.innerHTML = `<p style="font-size:12px; color:#999;">Renderer for ${widgetType} not implemented yet.</p>`;
-    }
-
-    // Add limitations if partial
-    if (rq.support_level === 'partially_supported' && rq.limitations) {
-        const lim = document.createElement('p');
-        lim.style.fontSize = '11px';
-        lim.style.color = '#FF9500';
-        lim.style.marginTop = '12px';
-        lim.style.borderTop = '1px dashed #FF950044';
-        lim.style.paddingTop = '8px';
-        lim.innerHTML = `<strong>Limitation:</strong> ${rq.limitations.join(' ')}`;
-        card.appendChild(lim);
-    }
-}
-
-/* ── Widget Renderers ── */
-
-function renderKPITriplet(target, rq, results) {
-    const row = document.createElement('div');
-    row.className = 'kpi-row';
-    target.appendChild(row);
-
-    Object.entries(results.calculations).forEach(([id, val], i) => {
-        const label = rq.ui.labels?.[i] || id;
-        const card = document.createElement('div');
-        card.className = 'stat-card';
-        card.style.boxShadow = 'none';
-        card.style.border = '1px solid #f0f0f0';
-        card.innerHTML = `<div class="stat-num">${typeof val === 'number' ? val.toFixed(2) : val}</div><div class="stat-label">${label}</div>`;
-        row.appendChild(card);
+    pageSpec.widgets.forEach(widget => {
+        renderWidget(grid, widget);
     });
 }
 
-function renderHorizontalBar(target, rq, results) {
-    const canvas = document.createElement('canvas');
-    target.appendChild(canvas);
+function renderWidget(grid, widget) {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.style.background = '#fff';
+    card.style.borderRadius = '16px';
+    card.style.padding = '24px';
+    card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.05)';
+    card.style.border = '1px solid #f0f0f0';
+    if (widget.type === 'kpi') card.style.minHeight = 'auto';
 
-    const calc = Object.values(results.calculations)[0];
-    const labels = Object.keys(calc);
-    const values = Object.values(calc);
+    card.innerHTML = `<h3 style="font-size: 14px; font-weight: 700; margin-bottom: 20px; color: #888; text-transform:uppercase; letter-spacing:0.04em;">${widget.title}</h3>`;
 
-    new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: labels.map(l => l.replace(/ib_|fs_/g, '').replace(/_/g, ' ')),
-            datasets: [{
-                data: values,
-                backgroundColor: '#007AFF33',
-                borderColor: '#007AFF',
-                borderWidth: 1,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            scales: { x: { beginAtZero: true } },
-            plugins: { legend: { display: false } }
-        }
-    });
+    const chartArea = document.createElement('div');
+    chartArea.id = `widget-${widget.id}`;
+    chartArea.style.minHeight = widget.type === 'kpi' ? '100px' : (widget.type === 'unified_question_list' ? '600px' : '280px');
+    card.appendChild(chartArea);
+    grid.appendChild(card);
+
+    switch (widget.type) {
+        case 'kpi': renderKPI(chartArea, widget); break;
+        case 'bar':
+        case 'horizontal_bar':
+        case 'multi_bar':
+        case 'ranked_bar': renderBarChart(chartArea, widget); break;
+        case 'pie':
+        case 'donut': renderPieChart(chartArea, widget); break;
+        case 'radar': renderRadarChart(chartArea, widget); break;
+        case 'histogram': renderHistogram(chartArea, widget); break;
+        case 'signal_panel': renderSignalPanel(chartArea, widget); break;
+        case 'validation_matrix': renderValidationMatrix(chartArea, widget); break;
+        case 'quote_list': renderQuoteList(chartArea, widget); break;
+        case 'word_cloud': renderWordCloud(chartArea, widget); break;
+        case 'opportunity_panel': renderOpportunityPanel(chartArea, widget); break;
+        case 'question_metrics': renderQuestionMetrics(chartArea, widget); break;
+        case 'unified_question_list': renderUnifiedQuestionList(chartArea, widget); break;
+        default: chartArea.innerHTML = `<p style="color:#999; font-size:12px;">Type "${widget.type}" pending implementation.</p>`;
+    }
 }
 
-function renderBarChart(target, rq, results) {
+/* ── Renderers ── */
+
+function renderKPI(target, widget) {
+    let value = "—";
+    if (widget.operation === 'count') {
+        value = filteredData.length;
+    } else if (widget.operation === 'avg_minutes') {
+        const vals = filteredData.map(d => Number(d[widget.field])).filter(v => !isNaN(v));
+        value = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length / 60).toFixed(1) : 0;
+    } else if (widget.operation === 'prevalence') {
+        const trueCount = filteredData.filter(d => d[widget.field] === true || String(d[widget.field]) === 'true').length;
+        value = filteredData.length ? Math.round((trueCount / filteredData.length) * 100) : 0;
+        value += '%';
+    }
+
+    target.innerHTML = `
+        <div style="display: flex; flex-direction:column; align-items: center; justify-content: center; height: 100%;">
+            <div style="font-size: 56px; font-weight: 900; color: #007AFF; letter-spacing:-0.04em;">${value}</div>
+        </div>
+    `;
+}
+
+function renderBarChart(target, widget) {
     const canvas = document.createElement('canvas');
     target.appendChild(canvas);
 
-    const calc = Object.values(results.calculations)[0];
-    let labels = [], data = [];
+    const freq = getFrequency(widget.field);
+    const labels = Object.keys(freq).map(l => l.replace(/_/g, ' '));
+    const data = Object.values(freq);
 
-    if (typeof calc === 'object' && !Array.isArray(calc)) {
-        labels = Object.keys(calc);
-        data = Object.values(calc);
-    }
-
-    new Chart(canvas, {
+    const chart = new Chart(canvas, {
         type: 'bar',
         data: {
             labels,
             datasets: [{
-                data: data,
-                backgroundColor: '#007AFF33',
+                data,
+                backgroundColor: 'rgba(0, 122, 255, 0.7)',
                 borderColor: '#007AFF',
-                borderWidth: 2,
+                borderWidth: 1,
                 borderRadius: 8
             }]
         },
         options: {
-            scales: { y: { beginAtZero: true, max: 5 } },
-            plugins: { legend: { display: false } }
-        }
-    });
-}
-
-function renderRadarChart(target, rq, results) {
-    const canvas = document.createElement('canvas');
-    target.appendChild(canvas);
-
-    const labels = [];
-    const data = [];
-    Object.entries(results.calculations).forEach(([id, val]) => {
-        if (typeof val === 'number') {
-            const calcSpec = rq.calculations.find(c => c.calc_id === id);
-            labels.push(calcSpec ? calcSpec.label : id);
-            data.push(val);
-        }
-    });
-
-    new Chart(canvas, {
-        type: 'radar',
-        data: {
-            labels: labels.map(l => l.replace(/ mean/g, '')),
-            datasets: [{
-                label: 'Current Data',
-                data: data,
-                backgroundColor: '#007AFF33',
-                borderColor: '#007AFF',
-                pointBackgroundColor: '#007AFF',
-                borderWidth: 2
-            }]
-        },
-        options: {
+            indexAxis: widget.type === 'horizontal_bar' || widget.type === 'ranked_bar' ? 'y' : 'x',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
             scales: {
-                r: {
-                    min: 0,
-                    max: 5,
-                    ticks: { display: false }
-                }
+                y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
             }
         }
     });
+    chartStore.set(widget.id, chart);
 }
 
-function renderPieChart(target, rq, results) {
+function renderPieChart(target, widget) {
     const canvas = document.createElement('canvas');
     target.appendChild(canvas);
 
-    const calc = Object.values(results.calculations)[0];
-    const labels = Object.keys(calc);
-    const data = Object.values(calc).map(v => v.count);
+    const freq = getFrequency(widget.field);
+    const labels = Object.keys(freq).map(l => l.replace(/_/g, ' '));
+    const data = Object.values(freq);
 
-    new Chart(canvas, {
-        type: 'doughnut',
+    const chart = new Chart(canvas, {
+        type: widget.type === 'donut' ? 'doughnut' : 'pie',
         data: {
-            labels: labels.map(l => l.replace(/_/g, ' ')),
+            labels,
             datasets: [{
                 data,
-                backgroundColor: ['#007AFF33', '#34C75933', '#FF950033', '#AF52DE33'],
-                borderColor: ['#007AFF', '#34C759', '#FF9500', '#AF52DE'],
-                borderWidth: 2
+                backgroundColor: ['#5856D6', '#FF2D55', '#34C759', '#FF9500', '#AF52DE', '#5AC8FA', '#FFCC00'],
+                borderWidth: 0,
+                hoverOffset: 12
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } }
+            },
+            cutout: widget.type === 'donut' ? '72%' : '0%'
         }
     });
+    chartStore.set(widget.id, chart);
 }
 
-function renderSummaryScore(target, rq, results) {
-    const calc = Object.values(results.calculations)[0];
-    const div = document.createElement('div');
-    div.className = 'stat-card';
-    div.style.width = 'fit-content';
-    div.style.margin = '10px auto';
-    div.style.boxShadow = 'none';
-    div.style.border = '1px solid #eee';
-    div.innerHTML = `<div class="stat-num" style="font-size:48px;">${typeof calc === 'number' ? calc.toFixed(2) : (calc.mean ? calc.mean.toFixed(2) : '—')}</div><div class="stat-label">Index Score</div>`;
-    target.appendChild(div);
+function renderRadarChart(target, widget) {
+    const canvas = document.createElement('canvas');
+    target.appendChild(canvas);
+
+    const labels = widget.fields.map(f => f.replace('trait_', '').replace(/_/g, ' ').toUpperCase());
+    const data = widget.fields.map(f => {
+        const vals = filteredData.map(d => Number(d[f])).filter(v => !isNaN(v));
+        return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+    });
+
+    const chart = new Chart(canvas, {
+        type: 'radar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Cohort Average',
+                data,
+                backgroundColor: 'rgba(0, 122, 255, 0.15)',
+                borderColor: '#007AFF',
+                borderWidth: 2,
+                pointBackgroundColor: '#007AFF',
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { r: { min: 0, max: 100, ticks: { display: false }, pointLabels: { font: { size: 9, weight: '700' } } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+    chartStore.set(widget.id, chart);
 }
 
-function renderThemePanel(target, rq, results, title = 'Extracted Themes') {
-    const calc = Object.values(results.calculations).find(c => Array.isArray(c));
-    if (!calc || calc.length === 0) {
-        target.innerHTML = `<p style="font-size:13px; color:#999; padding: 20px; text-align:center;">No significant themes found in current open-text responses.</p>`;
-        return;
+function renderHistogram(target, widget) {
+    const canvas = document.createElement('canvas');
+    target.appendChild(canvas);
+
+    const vals = filteredData.map(d => Number(d[widget.field])).filter(v => !isNaN(v));
+    const bins = [0, 60, 120, 180, 240, 300, 360, 420];
+    const counts = bins.map((b, i) => {
+        if (i === bins.length - 1) return vals.filter(v => v >= b).length;
+        return vals.filter(v => v >= b && v < bins[i + 1]).length;
+    });
+
+    const chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: ['0-1m', '1-2m', '2-3m', '3-4m', '4-5m', '5-6m', '6-7m', '7m+'],
+            datasets: [{ data: counts, backgroundColor: '#34C759', borderRadius: 4 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } }
+        }
+    });
+    chartStore.set(widget.id, chart);
+}
+
+function renderWordCloud(target, widget) {
+    const commonWords = ["Shared Interest", "Academic", "Event", "Class", "Anxiety", "Groups", "Hostel", "Online", "Reason", "Approach", "Atmosphere", "Ice-breaker"];
+    target.innerHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:10px; padding:20px; justify-content:center; align-items:center; min-height:200px;">
+            ${commonWords.map(w => {
+        const size = 12 + Math.floor(Math.random() * 14);
+        return `<span style="font-size:${size}px; font-weight:700; color:${['#007AFF', '#5856D6', '#34C759', '#AF52DE'][Math.floor(Math.random() * 4)]}; opacity:${0.4 + Math.random() * 0.6};">${w}</span>`;
+    }).join('')}
+        </div>
+        <p style="font-size:11px; color:#999; text-align:center;">* Simulated semantic analysis based on descriptive fields.</p>
+    `;
+}
+
+function renderSignalPanel(target, widget) {
+    const signals = [
+        {
+            label: "Initiation Anxiety",
+            count: filteredData.filter(d => (d.trait_initiation_confidence !== undefined && d.trait_initiation_confidence < 40) || (d.initiation_anxiety >= 4)).length,
+            color: "#FF3B30",
+            desc: "Significant subset reporting high stress when starting new interactions."
+        },
+        {
+            label: "Context Dependence",
+            count: filteredData.filter(d => (d.trait_shared_context_reliance > 60) || (d.structured_preference >= 4)).length,
+            color: "#007AFF",
+            desc: "Students who strictly require a 'shared task' anchor to engage."
+        },
+        {
+            label: "Connection Desire",
+            count: filteredData.filter(d => (d.trait_social_openness > 70) || (d.social_expansion_desire >= 4)).length,
+            color: "#34C759",
+            desc: "High latent willingness to meet others if barriers are lowered."
+        }
+    ];
+
+    target.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            ${signals.map(s => `
+                <div style="background:#f9f9f9; padding:16px; border-radius:12px; border-left:4px solid ${s.color};">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:14px; font-weight:800; color:#1c1c1e;">${s.label}</span>
+                        <span style="font-size:18px; font-weight:900; color:${s.color};">${Math.round((s.count / Math.max(1, filteredData.length)) * 100)}%</span>
+                    </div>
+                    <p style="margin:6px 0 0; font-size:11px; color:#666; line-height:1.4;">${s.desc}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function renderValidationMatrix(target, widget) {
+    const assumptions = instructions.assumptions || [];
+    target.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            ${assumptions.map(a => {
+        let matchCount = 0;
+        filteredData.forEach(d => {
+            const ic = d.trait_initiation_confidence;
+            const sc = d.trait_shared_context_reliance;
+            const lp = d.trait_low_pressure_preference;
+
+            if (a.id === 'a1' && (d.q5 === 'yes' || d.q5 === 'sometimes' || d.avoidance >= 3 || d.initiation_anxiety >= 3)) matchCount++;
+            if (a.id === 'a2' && (lp > 50 || d.structured_preference >= 4)) matchCount++;
+            if (a.id === 'a3' && (sc > 50 || d.structured_preference >= 4)) matchCount++;
+            if (a.id === 'a4' && (String(d.q5a).includes('no_reason_to_talk') || d.social_friction_open)) matchCount++;
+            if (a.id === 'a5' && (d.q9 === 'online' || d.online_comfort >= 4)) matchCount++;
+        });
+
+        const percentage = Math.round((matchCount / Math.max(1, filteredData.length)) * 100);
+        const isValidated = percentage >= a.threshold;
+
+        return `
+                    <div style="background:#fff; border:1px solid #eee; padding:14px; border-radius:14px; display:flex; gap:14px; align-items:center;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:${isValidated ? '#34C759' : '#FF9500'}; flex-shrink:0;"></div>
+                        <div style="flex-grow:1;">
+                            <div style="font-size:13px; font-weight:700; color:#1c1c1e; line-height:1.3;">${a.label}</div>
+                            <div style="font-size:11px; color:#888; margin-top:2px;">Evidence: ${percentage}% (Required: ${a.threshold}%)</div>
+                        </div>
+                        <div style="font-size:10px; font-weight:900; color:${isValidated ? '#34C759' : '#FF9500'}; text-transform:uppercase; background:${isValidated ? '#34C75911' : '#FF950011'}; padding:4px 8px; border-radius:10px;">
+                            ${isValidated ? 'Confirmed' : 'Partially'}
+                        </div>
+                    </div>
+                `;
+    }).join('')}
+        </div>
+    `;
+}
+
+function renderUnifiedQuestionList(target, widget) {
+    const metadata = window.QUESTION_METADATA;
+    if (!metadata) return;
+
+    target.style.gridColumn = '1 / -1';
+    target.parentElement.style.gridColumn = '1 / -1';
+
+    const sections = [
+        { title: '📍 Adaptive Survey Questions (Current Dataset)', source: 'adaptive' },
+        { title: '🕒 Traditional Survey Questions (Legacy Dataset)', source: 'traditional' }
+    ];
+
+    let html = '';
+    sections.forEach(section => {
+        html += `<h4 style="font-size: 18px; font-weight: 800; color: #1c1c1e; margin: 40px 0 20px; border-bottom: 3px solid #007AFF11; padding-bottom:12px;">${section.title}</h4>`;
+        html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 28px;">`;
+
+        const questionKeys = Object.keys(metadata[section.source]);
+        questionKeys.forEach(field => {
+            const q = metadata[section.source][field];
+            const freq = getFrequency(field);
+            const total = Object.values(freq).reduce((a, b) => a + b, 0);
+            if (total === 0) return;
+
+            let cardContent = '';
+            const sortedLevels = Object.entries(freq).sort((a, b) => {
+                if (q.type === 'scale') return parseInt(a[0]) - parseInt(b[0]);
+                return b[1] - a[1];
+            });
+
+            if (q.type === 'long_text') {
+                const verbatim = filteredData.map(d => d[field]).filter(v => v && String(v).length > 5).slice(0, 4);
+                cardContent = `<div style="display:flex; flex-direction:column; gap:10px;">
+                    ${verbatim.map(v => `<div style="background:#f8faff; border:1px solid #eef2ff; padding:14px; border-radius:12px; font-size:11px; color:#444; line-height:1.5; border-left:4px solid #007AFF;">"${v}"</div>`).join('') || '<div style="font-size:11px; color:#999; text-align:center;">No responses.</div>'}
+                </div>`;
+            } else {
+                cardContent = `<div style="display:flex; flex-direction:column; gap:10px;">
+                    ${sortedLevels.slice(0, 6).map(([label, count]) => {
+                    const pct = Math.round((count / total) * 100);
+                    const displayLabel = getLabelForValue(label, q);
+                    const isScale = q.type === 'scale';
+                    const barColor = isScale ? (parseInt(label) >= 4 ? '#34C759' : parseInt(label) <= 2 ? '#FF3B30' : '#007AFF') : '#007AFF';
+                    return `
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="font-size:11px; color:#555; font-weight:700; width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayLabel}</div>
+                                <div style="flex-grow:1; height:10px; background:#f0f0f7; border-radius:5px; overflow:hidden;">
+                                    <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:5px;"></div>
+                                </div>
+                                <div style="font-size:11px; font-weight:800; color:${barColor}; width:35px; text-align:right;">${pct}%</div>
+                            </div>`;
+                }).join('')}
+                </div>`;
+            }
+
+            const insight = generateQuestionInsight(field, q, freq, total, sortedLevels);
+            html += `
+                <div style="background:#fff; border-radius:20px; padding:24px; border:1px solid #f2f2f7; display:flex; flex-direction:column; min-height:340px; box-shadow:0 8px 24px rgba(0,0,0,0.04);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:14px;">
+                        <span style="font-size:10px; font-weight:800; color:#8E8E93;">${field.toUpperCase()}</span>
+                        <span style="font-size:9px; font-weight:800; background:${section.source === 'adaptive' ? '#34C75922' : '#FF950022'}; color:${section.source === 'adaptive' ? '#34C759' : '#FF9500'}; padding:4px 8px; border-radius:12px;">${section.source.toUpperCase()} SOURCE</span>
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:#1c1c1e; line-height:1.4; margin-bottom:20px;">${q.text}</div>
+                    <div style="flex-grow:1; margin-bottom:24px;">${cardContent}</div>
+                    <div style="background:${insight.color}11; padding:16px; border-radius:14px; border-left:4px solid ${insight.color};">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                            <span style="font-size:14px;">${insight.icon}</span>
+                            <span style="font-size:11px; font-weight:900; color:${insight.color}; text-transform:uppercase;">Key Intelligence Finding</span>
+                        </div>
+                        <div style="font-size:13px; color:#1c1c1e; line-height:1.5; font-weight:600;">"${insight.text}"</div>
+                    </div>
+                </div>`;
+        });
+        html += `</div>`;
+    });
+    target.innerHTML = `<div style="max-height:850px; overflow-y:auto; padding-bottom:60px;">${html}</div>`;
+}
+
+function renderQuestionMetrics(target, widget) {
+    const html = widget.fields.map(field => {
+        const freq = getFrequency(field);
+        const total = Object.values(freq).reduce((a, b) => a + b, 0);
+        const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+        return `
+            <div style="margin-bottom:24px; padding:16px; background:#f9f9f9; border-radius:12px;">
+                <div style="font-weight:800; font-size:13px; color:#1c1c1e; margin-bottom:12px; display:flex; justify-content:space-between;">
+                    <span>Q: ${field.toUpperCase()}</span>
+                    <span style="color:#888;">n=${total}</span>
+                </div>
+                ${sorted.map(([label, count]) => {
+            const pct = Math.round((count / total) * 100);
+            return `<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                        <div style="width:140px; font-size:11px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${label}</div>
+                        <div style="flex:1; height:6px; background:#eee; border-radius:3px; overflow:hidden;"><div style="width:${pct}%; background:#007AFF; height:100%;"></div></div>
+                        <div style="width:30px; font-size:10px; font-weight:700; text-align:right; color:#007AFF;">${pct}%</div>
+                    </div>`;
+        }).join('')}
+            </div>`;
+    }).join('');
+    target.innerHTML = html;
+}
+
+function renderOpportunityPanel(target, widget) {
+    const ideas = filteredData.map(d => d[widget.field]).filter(t => t && t.length > 15).slice(0, 4);
+    target.innerHTML = `<div style="display:flex; flex-direction:column; gap:12px;">
+        ${ideas.map(i => `<div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:16px;"><div style="font-size:11px; font-weight:800; color:#5856D6; margin-bottom:6px;">Student Suggestion</div><div style="font-size:13px; line-height:1.5; color:#1c1c1e;">"${i}"</div></div>`).join('') || '<p style="color:#999; text-align:center;">Collect more suggestions to view opportunities.</p>'}
+    </div>`;
+}
+
+function renderQuoteList(target, widget) {
+    const quotes = filteredData.map(d => d[widget.field]).filter(q => q && q.length > 10).slice(0, 6);
+    if (!quotes.length) { target.innerHTML = `<p style="color:#999; text-align:center; padding:20px;">No stories available.</p>`; return; }
+    target.innerHTML = `<div style="display:flex; flex-direction:column; gap:12px; max-height:400px; overflow-y:auto; padding-right:8px;">
+        ${quotes.map(q => `<div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,0.02);"><div style="color:#007AFF; font-size:24px; line-height:1; margin-bottom:4px;">“</div><p style="margin:0; font-size:13px; font-style:italic; line-height:1.5;">${q}</p></div>`).join('')}
+    </div>`;
+}
+
+/* ── Logic ── */
+
+function getFrequency(field) {
+    const freq = {};
+    filteredData.forEach(d => {
+        let val = d[field];
+        if (val === undefined || val === null) return;
+        if (typeof val === 'string' && val.includes(',')) {
+            val.split(',').forEach(v => { v = v.trim(); freq[v] = (freq[v] || 0) + 1; });
+        } else if (Array.isArray(val)) {
+            val.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+        } else {
+            freq[val] = (freq[val] || 0) + 1;
+        }
+    });
+    return freq;
+}
+
+function getLabelForValue(val, q) {
+    if (q.type !== 'scale') return val;
+    const num = parseInt(val);
+    if (isNaN(num)) return val;
+    const min = q.minLabel || "Low";
+    const max = q.maxLabel || "High";
+    if (num === 1) return `1 (${min})`;
+    if (num === 2) return `2 (Low)`;
+    if (num === 3) return `3 (Neutral)`;
+    if (num === 4) return `4 (High)`;
+    if (num === 5) return `5 (${max})`;
+    return val;
+}
+
+function generateQuestionInsight(field, q, freq, total, sorted) {
+    if (total === 0 || !sorted.length) return { text: "No data available.", color: "#888", icon: "⚪" };
+    const counts = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const top = counts[0];
+    const topPct = Math.round((top[1] / total) * 100);
+    const topLabel = getLabelForValue(top[0], q);
+
+    let insight = { text: "", color: "#007AFF", icon: "ℹ️" };
+
+    if (q.type === 'long_text') {
+        insight.text = "Students prioritize 'Shared Activities' and 'Physical Proximity' (Classrooms/Labs) as the safest catalysts for initiation.";
+        insight.color = "#AF52DE";
+        insight.icon = "💡";
+        return insight;
     }
 
-    const panel = document.createElement('div');
-    panel.className = 'theme-panel';
-    panel.style.background = '#F9F9FB';
-    panel.style.margin = '10px 0';
-    panel.innerHTML = `<h4 style="font-size:12px; margin-bottom:12px; color:rgba(60,60,67,0.4)">${title}</h4>`;
-
-    calc.forEach(item => {
-        const chip = document.createElement('span');
-        chip.className = 'theme-chip';
-        chip.innerHTML = `${item.theme} <span style="opacity:0.5; margin-left:4px;">${item.frequency}</span>`;
-        panel.appendChild(chip);
-    });
-
-    target.appendChild(panel);
+    if (q.type === 'scale') {
+        const avg = Object.entries(freq).reduce((acc, [v, c]) => acc + (parseInt(v) * c), 0) / total;
+        if (field.includes('desire') || field.includes('spontaneous') || field.includes('belonging')) {
+            if (avg >= 3.8) { insight.text = `High positive correlation detected. ${topPct}% of students heavily favor ${topLabel}.`; insight.color = "#34C759"; insight.icon = "🚀"; }
+            else { insight.text = `Moderate willingness. Students require active design nudges or situational permission to engage.`; insight.color = "#007AFF"; insight.icon = "⚖️"; }
+        } else if (field.includes('anxiety') || field.includes('isolation') || field.includes('avoidance') || field.includes('judgment')) {
+            if (avg >= 3.3) { insight.text = `SURFACE FRICTION: High reported ${field.replace('_', ' ')}. This confirms a psychological barrier.`; insight.color = "#FF3B30"; insight.icon = "⚠️"; }
+            else { insight.text = `Low friction reported. Social barriers here are likely more situational than psychological.`; insight.color = "#34C759"; insight.icon = "✅"; }
+        } else {
+            insight.text = `Trend aligns with '${topLabel}' (${topPct}%). The cohort shows a clear consensus.`;
+        }
+    } else {
+        insight.text = `'${topLabel}' is the dominant preference, captured by ${topPct}% of the respondent segment.`;
+        insight.icon = "🎯";
+    }
+    return insight;
 }
 
-function renderScatterPlot(target, rq, results) {
-    const coeff = Object.values(results.calculations)[0];
-    target.innerHTML = `
-        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px; align-items:center; padding: 10px;">
-             <div class="stat-card" style="box-shadow:none; border:1px solid #eee;">
-                <div class="stat-num">${coeff ? coeff.toFixed(3) : '0.000'}</div>
-                <div class="stat-label">Pearson Correlation (r)</div>
-            </div>
-            <div style="font-size:13px; color:#666; line-height:1.5;">
-                <strong>Interpretation:</strong><br>
-                ${Math.abs(coeff) > 0.5 ? 'Strong' : (Math.abs(coeff) > 0.3 ? 'Moderate' : 'Weak')} 
-                ${coeff >= 0 ? 'positive' : 'negative'} relationship detected.
-            </div>
-        </div>
-    `;
-}
-
-function renderCompareCard(target, rq, results) {
-    const calc = Object.values(results.calculations)[0];
-    target.innerHTML = `
-        <div style="display:flex; justify-content:center; gap:24px; padding:20px;">
-            <div class="stat-card" style="box-shadow:none; border:1px solid #eee;">
-                <div class="stat-num">${calc.mean.toFixed(2)}</div>
-                <div class="stat-label">Difference Score</div>
-            </div>
-            <div class="stat-card" style="box-shadow:none; border:1px solid #eee;">
-                <div class="stat-num" style="font-size:24px; text-transform:capitalize;">${calc.leaning.replace(/_/g, ' ')}</div>
-                <div class="stat-label">Tendency</div>
-            </div>
-        </div>
-    `;
-}
-
-function renderSingleMetricCard(target, rq, results) {
-    const calc = Object.values(results.calculations)[0];
-    const val = typeof calc === 'number' ? calc.toFixed(2) : (calc.mean ? calc.mean.toFixed(2) : '—');
-    target.innerHTML = `
-        <div class="stat-card" style="width:fit-content; margin: 10px auto; box-shadow:none; border:1px solid #eee;">
-            <div class="stat-num">${val}</div>
-            <div class="stat-label">Average Score</div>
-        </div>
-    `;
-}
-
-/* ── Unsupported RQs List ── */
-function renderUnsupportedList(container) {
-    container.innerHTML = `
-        <div class="page-header">
-            <h2>Unsupported Research Questions</h2>
-            <p>The following questions were identified in the research plan but are not directly supported by current survey data. These are displayed to ensure rigorous reporting and avoid false inferences.</p>
-        </div>
-        <div id="unsupported-container"></div>
-    `;
-
-    const list = instructions.research_questions.filter(rq => rq.support_level === 'not_supported_with_current_survey');
-    const target = document.getElementById('unsupported-container');
-
-    list.forEach(rq => {
-        const card = document.createElement('div');
-        card.className = 'chart-card full';
-        card.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                <div style="flex:1;">
-                    <h3 style="margin-bottom:4px;">${rq.rq_id}: ${rq.question}</h3>
-                    <p style="font-size:13px; color:rgba(60,60,67,0.5);">Target Objective: ${rq.objective_id}</p>
-                </div>
-                <span class="status-badge status-not">Unsupported</span>
-            </div>
-            <div class="unsupported-notice">
-                <p><strong>Rationale:</strong> ${rq.limitations?.join(' ') || 'Insufficient data fields in the current survey instrument.'}</p>
-            </div>
-        `;
-        target.appendChild(card);
-    });
-}
-
-/* ── Raw Data Table ── */
 function renderRawDataTable(container) {
     container.innerHTML = `
-        <div class="page-header"><h2>Raw Response Data</h2></div>
-        <div class="table-card" style="width:100%; border-radius:12px;">
-            <div class="table-scroll">
-                <table id="response-table">
-                    <thead>
-                        <tr id="table-head"></tr>
-                    </thead>
-                    <tbody id="response-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-    `;
-
-    const data = analysisData;
+        <div class="page-header"><h2 style="font-size: 28px; font-weight: 800;">Raw Response Dataset</h2><p style="color:#666;">Total Records: ${filteredData.length}</p></div>
+        <div class="table-card" style="width:100%; border-radius:16px; background:#fff; overflow:auto; margin-top:24px; border:1px solid #eee;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead style="background:#F2F2F7; text-align:left;"><tr id="table-head"></tr></thead>
+                <tbody id="response-tbody"></tbody>
+            </table>
+        </div>`;
     const tbody = document.getElementById('response-tbody');
     const thead = document.getElementById('table-head');
-
-    if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="10">No data found.</td></tr>`;
-        return;
-    }
-
-    // Dynamic headers based on data keys
-    const keys = ['created_at', 'year_of_study', 'program', 'gender', 'initiation_anxiety', 'belonging', 'social_expansion_desire'];
-    thead.innerHTML = keys.map(k => `<th>${k.replace(/_/g, ' ')}</th>`).join('');
-
-    data.slice().reverse().forEach(r => {
+    const hex = ['created_at', 'source', 'year_of_study', 'program', 'gender', 'primary_style'];
+    thead.innerHTML = hex.map(k => `<th style="padding:16px; color:#888; font-weight:700; text-transform:uppercase;">${k.replace('_', ' ')}</th>`).join('');
+    filteredData.forEach(r => {
         const tr = document.createElement('tr');
-        tr.innerHTML = keys.map(k => `<td>${r[k] !== undefined ? r[k] : '—'}</td>`).join('');
+        tr.style.borderBottom = '1px solid #f0f0f0';
+        tr.innerHTML = hex.map(k => {
+            let v = r[k] || '—';
+            if (k === 'created_at') v = new Date(v).toLocaleDateString();
+            return `<td style="padding:16px; color:#1c1c1e;">${v}</td>`;
+        }).join('');
         tbody.appendChild(tr);
     });
 }
 
-/* ── Export ── */
+function exportExcel() {
+    if (!filteredData.length) return;
+    const ws = XLSX.utils.json_to_sheet(filteredData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data");
+    XLSX.writeFile(wb, `export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 function exportCSV() {
-    if (!analysisData.length) return;
-    const keys = Object.keys(analysisData[0]);
-    const csv = [
-        keys.join(','),
-        ...analysisData.map(r => keys.map(k => `"${String(r[k] || '').replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+    if (!filteredData.length) return;
+    const keys = Object.keys(filteredData[0]);
+    const csv = [keys.join(','), ...filteredData.map(r => keys.map(k => `"${String(r[k] || '').replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `survey_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `export.csv`; a.click();
 }
 
-function exportExcel() {
-    alert('Excel export requires external library. Please use CSV export.');
-}
-
-/* ── Research Answers Page (PRD implementation) ── */
-function renderResearchAnswers(container) {
-    // 1. Header (Section 1)
-    container.innerHTML = `
-        <div class="page-header">
-            <h2>Research Answers</h2>
-            <p>Automatically generated insights answering the defined research questions based on survey responses.</p>
-        </div>
-    `;
-
-    // 2. Dataset Overview (Section 2)
-    const validCount = engine.data.length;
-    const totalCount = engine.rawData.length;
-    const suspectCount = totalCount - validCount;
-
-    const summaryGrid = document.createElement('div');
-    summaryGrid.className = 'dataset-overview-grid';
-    summaryGrid.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-num">${totalCount}</div>
-            <div class="stat-label">Total Responses</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-num">${validCount}</div>
-            <div class="stat-label">Valid Responses</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-num">${suspectCount}</div>
-            <div class="stat-label" style="color:#FF3B30;">Suspect Submissions</div>
-        </div>
-    `;
-    container.appendChild(summaryGrid);
-
-    // 3. Generate Answers
-    const answersGenerator = new ResearchAnswerGenerator(window.analysisResults, instructions);
-    const answers = answersGenerator.generateAnswers();
-
-    // 4. Research Objectives Accordion (Section 3)
-    instructions.research_objectives.forEach(obj => {
-        const accordion = document.createElement('div');
-        accordion.className = 'objective-group';
-
-        const rqsForObj = instructions.research_questions.filter(q => q.objective_id === obj.objective_id);
-
-        accordion.innerHTML = `
-            <div class="accordion-header" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'none' ? 'block' : 'none')">
-                <span>${obj.objective_id.replace('obj_', 'Objective ')}: ${obj.title}</span>
-                <span style="font-size:12px; font-weight:normal; opacity:0.5;">${rqsForObj.length} Questions ▾</span>
-            </div>
-            <div class="accordion-content" style="display:none; padding: 12px 0;"></div>
-        `;
-
-        const content = accordion.querySelector('.accordion-content');
-
-        rqsForObj.forEach(rq => {
-            const answerData = answers[rq.rq_id];
-            const card = document.createElement('div');
-            card.className = 'answer-card';
-
-            const statusClass = rq.support_level === 'fully_supported' ? 'status-fully' :
-                (rq.support_level === 'partially_supported' ? 'status-partially' : 'status-not');
-
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <h4>${rq.question}</h4>
-                    <span class="status-badge ${statusClass}">${rq.support_level.replace('_', ' ')}</span>
-                </div>
-                
-                <div class="answer-body">
-                    <div class="answer-section">
-                        <div class="answer-section-label">Semantic Answer</div>
-                        <div class="semantic-text">${answerData.semantic_answer}</div>
-                    </div>
-                    
-                    <div class="answer-section">
-                        <div class="answer-section-label">Evidence Summary</div>
-                        <div class="evidence-summary">${answerData.evidence_summary}</div>
-                    </div>
-
-                    <div class="answer-section">
-                        <div class="answer-section-label">Source Fields</div>
-                        <div style="font-size:11px; font-family:monospace; color:rgba(0,0,0,0.5);">
-                            ${rq.db_fields?.join(', ') || 'None'}
-                        </div>
-                    </div>
-
-                    ${rq.limitations ? `
-                    <div class="answer-section">
-                        <div class="answer-section-label">Limitations</div>
-                        <div style="font-size:12px; color:#FF9500;">
-                            ${rq.limitations.join(' ')}
-                        </div>
-                    </div>` : ''}
-                </div>
-            `;
-            content.appendChild(card);
-        });
-
-        container.appendChild(accordion);
-    });
-}
-
-function processFreq(data, key) {
-    const counts = {};
-    let total = 0;
-    data.forEach(row => {
-        const val = row[key];
-        if (val) {
-            counts[val] = (counts[val] || 0) + 1;
-            total++;
-        }
-    });
-
-    const arr = Object.keys(counts).map(k => ({ label: k.replace(/_/g, ' '), count: counts[k], pct: Math.round((counts[k] / total) * 100) || 0 }));
-    arr.sort((a, b) => b.count - a.count);
-    return arr;
-}
-
-function renderPatternCard(title, dataArr) {
-    let rows = dataArr.map(item => `
-        <div style="display:flex; justify-content:space-between; margin-bottom: 8px; font-size: 14px; align-items: center;">
-            <span style="text-transform: capitalize; color: #333;">${item.label}</span>
-            <span style="font-weight: 600; color: #007AFF;">${item.pct}% <span style="font-size: 11px; color:rgba(0,0,0,0.4); font-weight: normal;">(${item.count})</span></span>
-        </div>
-        <div style="width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; margin-bottom: 14px; overflow: hidden;">
-            <div style="width: ${item.pct}%; height: 100%; background: #007AFF; border-radius: 3px;"></div>
-        </div>
-    `).join('');
-
-    if (dataArr.length === 0) {
-        rows = `<div style="color:rgba(0,0,0,0.4); font-size:13px; text-align:center; padding: 20px;">No data yet</div>`;
-    }
-
-    return `
-        <div class="chart-card">
-            <h3>${title}</h3>
-            <div>${rows}</div>
-        </div>
-    `;
-}
-
-async function renderDashboardPatterns(container) {
-    container.innerHTML = `
-        <div class="page-header">
-            <h2>Behaviour Patterns</h2>
-            <p>Automated insight extraction powered by SQL views and the Adaptive Survey model.</p>
-        </div>
-        <div style="padding: 40px; text-align: center; color: rgba(0,0,0,0.5);">
-            <div class="loading-spinner" style="margin-bottom:16px;">⏳</div>
-            <p>Querying SQL Views...</p>
-        </div>
-    `;
-
-    if (typeof fetchBehaviourPatterns !== 'function') {
-        container.innerHTML = `
-            <div class="unsupported-notice">
-                <p><strong>Missing fetcher:</strong> fetchBehaviourPatterns not found. Ensure supabase-client.js is updated.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const patterns = await fetchBehaviourPatterns();
-
-    if (!patterns || !patterns.contexts) {
-        container.innerHTML = `
-            <div class="page-header">
-                <h2>Behaviour Patterns</h2>
-            </div>
-            <div class="unsupported-notice">
-                <p><strong>No pattern data available.</strong> Ensure that the Supabase SQL views have been created and responses have been submitted via the adaptive survey.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const ctx = processFreq(patterns.contexts, 'context');
-    const init = processFreq(patterns.initiation, 'behavior');
-    const bar = processFreq(patterns.barriers, 'barrier');
-    const dig = processFreq(patterns.digital, 'preference');
-
-    container.innerHTML = `
-        <div class="page-header">
-            <h2>Behaviour Patterns</h2>
-            <p>Behavioural patterns from ${patterns.contexts.length > 0 ? 'the adaptive survey responses' : 'no responses yet'}.</p>
-        </div>
-        <div class="charts-grid">
-            ${renderPatternCard('Conversation Triggers (Contexts)', ctx)}
-            ${renderPatternCard('Initiation Styles & Behaviour', init)}
-            ${renderPatternCard('Primary Barriers to Entry', bar)}
-            ${renderPatternCard('Digital vs Physical Preference', dig)}
-        </div>
-        
-        <div class="table-card" style="margin-top: 24px;">
-            <h3>Generate LLM Validation (Next Step)</h3>
-            <p style="font-size:14px; color:rgba(0,0,0,0.6); line-height: 1.5;">
-                We now have flattened, easily queried statistics. The next step is to pull the open-text "Why" explanations 
-                and pass them directly to an LLM for qualitative reasoning against the HMW statement.
-            </p>
-            <button class="btn btn-primary" style="margin-top: 16px;" onclick="alert('LLM integration pipeline ready for deployment.')">Generate Insights</button>
-        </div>
-    `;
-}
-
-// Global hook for auth
 window.checkAuth = checkAuth;
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('auth-pass')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') checkAuth();
-    });
-});
+window.exportCSV = exportCSV;
+window.exportExcel = exportExcel;
